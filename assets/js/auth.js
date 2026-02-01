@@ -1,6 +1,9 @@
-// auth.js
+// assets/js/auth.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// 🔥 Firebase config (paste yours from Firebase Console > Project Settings)
+
 const firebaseConfig = {
   apiKey: "AIzaSyCZ5L0dUrVt0MK5DDGuWZQlBOMitKYUuag",
   authDomain: "bethany-system.firebaseapp.com",
@@ -10,52 +13,45 @@ const firebaseConfig = {
   appId: "1:267285501238:web:b039650181d6c14b3acf97"
 };
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-async function login() {
+window.login = async function () {
   const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
+  const password = document.getElementById("password").value.trim();
 
   if (!email || !password) {
-    alert("Enter email and password");
+    alert("Please enter email and password.");
     return;
   }
 
   try {
-    // 1️⃣ Firebase Auth login
-    const cred = await auth.signInWithEmailAndPassword(email, password);
+    // Sign in with Firebase Auth
+    const cred = await signInWithEmailAndPassword(auth, email, password);
     const uid = cred.user.uid;
 
-    // 2️⃣ Fetch user profile from Firestore
-    const doc = await db.collection("users").doc(uid).get();
-
-    if (!doc.exists) {
-      alert("User profile not found in database");
+    // Fetch user document from Firestore
+    const userDoc = await getDoc(doc(db, "users", uid));
+    if (!userDoc.exists()) {
+      alert("User profile not found. Contact admin.");
       return;
     }
 
-    const user = doc.data();
+    const userData = userDoc.data();
 
-    if (!user.active) {
-      alert("Your account has been deactivated. Contact admin.");
-      await auth.signOut();
+    if (!userData.active) {
+      alert("Your account is deactivated. Contact admin.");
       return;
     }
 
-    // 3️⃣ Save user session
-    sessionStorage.setItem("user", JSON.stringify({
-      uid,
-      ...user
-    }));
+    // Store user info locally for dashboard
+    localStorage.setItem("user", JSON.stringify(userData));
 
-    // 4️⃣ Redirect to dashboard
+    // Redirect to dashboard
     window.location.href = "dashboard.html";
 
   } catch (err) {
-    alert(err.message);
+    alert("Login failed: " + err.message);
   }
-}
+};

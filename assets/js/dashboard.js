@@ -1,6 +1,8 @@
-// dashboard.js
+// assets/js/dashboard.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// 🔥 Same Firebase config as auth.js
+
 const firebaseConfig = {
   apiKey: "AIzaSyCZ5L0dUrVt0MK5DDGuWZQlBOMitKYUuag",
   authDomain: "bethany-system.firebaseapp.com",
@@ -10,18 +12,21 @@ const firebaseConfig = {
   appId: "1:267285501238:web:b039650181d6c14b3acf97"
 };
 
-firebase.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-const auth = firebase.auth();
-const db = firebase.firestore();
+// 🔹 Load user from localStorage
+const user = JSON.parse(localStorage.getItem("user"));
+if (!user) window.location.href = "login.html";
 
-const nav = document.getElementById("nav");
-const title = document.getElementById("sectionTitle");
-const content = document.getElementById("sectionContent");
-const userNameEl = document.getElementById("userName");
-const userDeptEl = document.getElementById("userDept");
+// Set profile info
+document.getElementById("userName").textContent = user.full_name || user.email;
+document.getElementById("userDept").textContent = user.departments.includes("ALL")
+  ? "All Departments"
+  : user.departments.join(", ");
 
-const ALL_SECTIONS = [
+// Sidebar sections
+const sections = [
   "Paediatric Surgery",
   "Rehabilitation",
   "Psychosocial & Spiritual Support",
@@ -29,91 +34,54 @@ const ALL_SECTIONS = [
   "Finance"
 ];
 
-// Protect page + load user
-auth.onAuthStateChanged(async (user) => {
-  if (!user) {
-    window.location.href = "login.html";
-    return;
-  }
+const nav = document.getElementById("nav");
+const title = document.getElementById("sectionTitle");
+const content = document.getElementById("sectionContent");
 
-  const doc = await db.collection("users").doc(user.uid).get();
+function hasAccess(section) {
+  return user.departments.includes("ALL") || user.departments.includes(section);
+}
 
-  if (!doc.exists) {
-    alert("User profile missing");
-    await auth.signOut();
-    window.location.href = "login.html";
-    return;
-  }
+// Build sidebar nav
+sections.forEach(section => {
+  if (!hasAccess(section)) return;
 
-  const profile = doc.data();
+  const li = document.createElement("li");
+  li.classList.add("nav-section");
 
-  if (!profile.active) {
-    alert("Account deactivated. Contact admin.");
-    await auth.signOut();
-    window.location.href = "login.html";
-    return;
-  }
+  const header = document.createElement("div");
+  header.classList.add("nav-header");
+  header.innerHTML = `<span>${section}</span><span class="chevron">▸</span>`;
 
-  userNameEl.textContent = profile.full_name || profile.email;
+  const submenu = document.createElement("ul");
+  submenu.classList.add("submenu");
 
-  const departments = profile.departments || [];
-  userDeptEl.textContent = departments.includes("ALL")
-    ? "All Departments"
-    : departments.join(", ");
+  ["Forms", "Records", "Reports"].forEach(item => {
+    const subLi = document.createElement("li");
+    subLi.textContent = item;
+    subLi.onclick = () => {
+      title.textContent = `${section} — ${item}`;
+      content.innerHTML = `
+        <h3>${item}</h3>
+        <p>${item} for <strong>${section}</strong> will appear here.</p>
+      `;
+    };
+    submenu.appendChild(subLi);
+  });
 
-  buildSidebar(departments);
+  header.addEventListener("click", () => {
+    header.classList.toggle("active");
+    submenu.classList.toggle("open");
+  });
+
+  li.appendChild(header);
+  li.appendChild(submenu);
+  nav.appendChild(li);
 });
 
-function hasAccess(departments, section) {
-  return departments.includes("ALL") || departments.includes(section);
-}
-
-function buildSidebar(departments) {
-  nav.innerHTML = "";
-
-  ALL_SECTIONS.forEach(section => {
-    if (!hasAccess(departments, section)) return;
-
-    const li = document.createElement("li");
-    li.classList.add("nav-section");
-
-    const header = document.createElement("div");
-    header.classList.add("nav-header");
-    header.innerHTML = `<span>${section}</span><span class="chevron">▸</span>`;
-
-    const submenu = document.createElement("ul");
-    submenu.classList.add("submenu");
-
-    ["Forms", "Records", "Reports"].forEach(item => {
-      const subLi = document.createElement("li");
-      subLi.textContent = item;
-
-      subLi.onclick = () => {
-        title.textContent = `${section} — ${item}`;
-        content.innerHTML = `
-          <h3>${item}</h3>
-          <p>${item} for <strong>${section}</strong> will appear here.</p>
-        `;
-      };
-
-      submenu.appendChild(subLi);
-    });
-
-    header.addEventListener("click", () => {
-      header.classList.toggle("active");
-      submenu.classList.toggle("open");
-    });
-
-    li.appendChild(header);
-    li.appendChild(submenu);
-    nav.appendChild(li);
-  });
-}
-
-// Logout
-async function logout() {
-  await auth.signOut();
+// 🔹 Logout button
+window.logout = async function () {
+  localStorage.removeItem("user");
+  await signOut(auth);
   window.location.href = "login.html";
-}
-
-window.logout = logout;
+};
