@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "email": "admin@bethany.org",
+    "password": "admin123",
+    "role": "admin",
+    "departments": ["ALL"]
+  },
+  {
+    "id": 2,
+    "email": "hr@bethany.org",
+    "password": "hr123",
+    "role": "editor",
+    "departments": ["HR"]
+  }
+]
