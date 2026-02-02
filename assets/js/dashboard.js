@@ -17,17 +17,14 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ------------------ Safe user load ------------------
+// ------------------ Safe User Load ------------------
 let user = null;
 try {
   user = JSON.parse(localStorage.getItem("user"));
 } catch (e) {
   user = null;
 }
-
-if (!user) {
-  window.location.href = "login.html";
-}
+if (!user) window.location.href = "login.html";
 
 // ------------------ Profile Info ------------------
 document.getElementById("userName").textContent = user.full_name || user.email || "User";
@@ -41,8 +38,9 @@ const title = document.getElementById("sectionTitle");
 const content = document.getElementById("sectionContent");
 
 // Finance external URL (placeholder)
-const FINANCE_URL = "https://finance.example.com"; 
+const FINANCE_URL = "https://finance.example.com";
 
+// ------------------ Permission Check ------------------
 function hasAccess(section) {
   return user.departments?.includes("ALL") || user.departments?.includes(section);
 }
@@ -50,29 +48,25 @@ function hasAccess(section) {
 // ------------------ Load Modules Dynamically ------------------
 async function loadSections() {
   try {
-    // Fetch all dashboard sections from Firestore
-    const q = query(collection(db, "modules"), orderBy("order", "asc"));
-    const snapshot = await getDocs(q);
+    const modulesQuery = query(collection(db, "modules"), orderBy("order", "asc"));
+    const snapshot = await getDocs(modulesQuery);
 
     snapshot.forEach(docSnap => {
       const section = docSnap.data();
-      if (!hasAccess(section.name)) return;
+      if (!hasAccess(section.name) || section.name === "Finance") return;
 
-      // Create list item
       const li = document.createElement("li");
       li.classList.add("nav-section");
 
-      // Header
       const header = document.createElement("div");
       header.classList.add("nav-header");
       header.innerHTML = `<span>${section.name}</span><span class="chevron">▸</span>`;
 
-      // Submenu
       const submenu = document.createElement("ul");
       submenu.classList.add("submenu");
 
-      // Default items from Firestore (array of strings)
-      section.items.forEach(item => {
+      // Dynamically add items from Firestore
+      section.items?.forEach(item => {
         const subLi = document.createElement("li");
         subLi.textContent = item;
         subLi.onclick = () => {
@@ -96,7 +90,7 @@ async function loadSections() {
       nav.appendChild(li);
     });
 
-    // ------------------ Append Finance at the Bottom ------------------
+    // ------------------ Finance Button at Bottom ------------------
     if (hasAccess("Finance")) {
       const financeLi = document.createElement("li");
       financeLi.classList.add("nav-section");
@@ -104,10 +98,7 @@ async function loadSections() {
       const financeBtn = document.createElement("div");
       financeBtn.classList.add("nav-header");
       financeBtn.innerHTML = `<span>Finance</span>`;
-
-      financeBtn.onclick = () => {
-        window.open(FINANCE_URL, "_blank", "noopener,noreferrer");
-      };
+      financeBtn.onclick = () => window.open(FINANCE_URL, "_blank", "noopener,noreferrer");
 
       financeLi.appendChild(financeBtn);
       nav.appendChild(financeLi);
@@ -119,7 +110,7 @@ async function loadSections() {
   }
 }
 
-// Initialize
+// ------------------ Initialize ------------------
 loadSections();
 
 // ------------------ Logout ------------------
