@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-
+// 🔹 Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCZ5L0dUrVt0MK5DDGuWZQlBOMitKYUuag",
   authDomain: "bethany-system.firebaseapp.com",
@@ -13,45 +13,57 @@ const firebaseConfig = {
   appId: "1:267285501238:web:b039650181d6c14b3acf97"
 };
 
+// 🔹 Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// 🔹 Login function
 window.login = async function () {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
 
   if (!email || !password) {
-    alert("Please enter email and password.");
+    alert("Please enter both email and password.");
     return;
   }
 
   try {
-    // Sign in with Firebase Auth
+    // 1️⃣ Authenticate via Firebase Auth
     const cred = await signInWithEmailAndPassword(auth, email, password);
     const uid = cred.user.uid;
 
-    // Fetch user document from Firestore
-    const userDoc = await getDoc(doc(db, "users", uid));
-    if (!userDoc.exists()) {
+    // 2️⃣ Load user document from Firestore
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
       alert("User profile not found. Contact admin.");
       return;
     }
 
-    const userData = userDoc.data();
+    const userData = userSnap.data();
 
     if (!userData.active) {
       alert("Your account is deactivated. Contact admin.");
       return;
     }
 
-    // Store user info locally for dashboard
-    localStorage.setItem("user", JSON.stringify(userData));
+    // 3️⃣ Store minimal user info in localStorage for dashboard
+    //    (this is safe, we don't store password or sensitive info)
+    localStorage.setItem("user", JSON.stringify({
+      uid: uid,
+      full_name: userData.full_name,
+      email: userData.email,
+      departments: userData.departments,
+      role: userData.role
+    }));
 
-    // Redirect to dashboard
+    // 4️⃣ Redirect to dashboard
     window.location.href = "dashboard.html";
 
   } catch (err) {
+    console.error("Login failed:", err);
     alert("Login failed: " + err.message);
   }
 };
