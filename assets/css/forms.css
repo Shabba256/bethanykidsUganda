@@ -1,0 +1,96 @@
+/* assets/css/forms.css */
+
+/* Overall card container */
+.form-card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin: 20px 0;
+  max-width: 700px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Form header image */
+.form-header-img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+/* Form title */
+.form-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #2c3e50;
+}
+
+/* Form description */
+.form-desc {
+  font-size: 0.95rem;
+  color: #555555;
+  margin-bottom: 20px;
+}
+
+/* Each field container */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+/* Field label */
+.form-label {
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #333333;
+}
+
+/* Input and select fields */
+.form-input {
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  border-color: #3498db;
+}
+
+/* Submit button */
+.form-submit {
+  background-color: #3498db;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.form-submit:hover {
+  background-color: #2980b9;
+}
+
+/* Success / error messages */
+.form-msg {
+  margin-top: 15px;
+  font-size: 0.95rem;
+}
+
+.form-msg.success {
+  color: #27ae60;
+}
+
+.form-msg.error {
+  color: #e74c3c;
+}
