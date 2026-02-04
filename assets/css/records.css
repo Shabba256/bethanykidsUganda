@@ -1,0 +1,108 @@
+/* ===============================
+   Records Dashboard Styles
+   =============================== */
+
+.records-container {
+  padding: 20px;
+}
+
+/* ---- Stats Cards ---- */
+.records-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+  font-size: 14px;
+  color: #555;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-card strong {
+  font-size: 20px;
+  color: #111;
+}
+
+/* ---- Actions ---- */
+.records-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.records-actions button {
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #111827;
+  color: #fff;
+  font-size: 13px;
+  transition: 0.2s ease;
+}
+
+.records-actions button:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+/* ---- Table ---- */
+.records-table-wrap {
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: auto;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+}
+
+.records-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1100px;
+  font-size: 13px;
+}
+
+.records-table th,
+.records-table td {
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.records-table thead {
+  background: #f3f4f6;
+}
+
+.records-table th {
+  font-weight: 600;
+  color: #333;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.records-table tbody tr {
+  border-bottom: 1px solid #eee;
+}
+
+.records-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .records-actions {
+    flex-direction: column;
+  }
+
+  .stat-card {
+    font-size: 13px;
+  }
+}

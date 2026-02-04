@@ -19,9 +19,7 @@ const db = getFirestore(app);
 
 // ------------------ Safe User Load ------------------
 let user = null;
-try {
-  user = JSON.parse(localStorage.getItem("user"));
-} catch { user = null; }
+try { user = JSON.parse(localStorage.getItem("user")); } catch { user = null; }
 if (!user) window.location.href = "login.html";
 
 // ------------------ Profile ------------------
@@ -65,14 +63,29 @@ async function loadSections() {
         const sub = document.createElement("li");
         sub.textContent = item;
 
-        // ------------------ FORMS REDIRECT ------------------
-        sub.onclick = () => {
-          if (item.toLowerCase() === "forms") {
-            const formId = section.name.toLowerCase().includes("paediatric")
+        // ------------------ FORMS / RECORDS ------------------
+        sub.onclick = async () => {
+          const lower = item.toLowerCase();
+          const sectionLower = section.name.toLowerCase();
+
+          if (lower === "forms") {
+            const formId = sectionLower.includes("paediatric")
               ? "paediatric_surgery"
-              : section.name.toLowerCase().replace(/\s+/g, "_");
+              : sectionLower.replace(/\s+/g, "_");
             window.location.href = `forms.html?form=${formId}`;
-          } else {
+          }
+          else if (lower === "records") {
+            title.textContent = `${section.name} — Records`;
+            content.innerHTML = `<p>Loading records...</p>`;
+            try {
+              const module = await import('./records.js');
+              module.loadRecords(content, user); // Pass container + user
+            } catch (err) {
+              console.error("Failed to load records.js:", err);
+              content.innerHTML = "<p>Failed to load records. Refresh the page.</p>";
+            }
+          }
+          else {
             title.textContent = `${section.name} — ${item}`;
             content.innerHTML = `<p>${item} for ${section.name} coming next.</p>`;
           }
