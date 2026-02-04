@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bethany Kids Uganda | Form</title>
+  <link rel="stylesheet" href="../assets/css/forms.css">
+</head>
+<body>
+
+  <!-- NAVBAR / HEADER -->
+  <header class="form-header">
+    <button onclick="logout()" class="logout-btn">Logout</button>
+  </header>
+
+  <!-- FORM CONTENT -->
+  <main class="form-main">
+    <div class="form-card">
+      <img id="formImage" src="" alt="Form Header Image" class="form-header-img">
+      <h1 id="formTitle" class="form-title">Form Title</h1>
+      <p id="formDesc" class="form-desc">Form description goes here.</p>
+
+      <div id="formContainer">
+        <!-- Dynamic form will be rendered here by forms.js -->
+      </div>
+
+      <div id="formMsg" class="form-msg"></div>
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script type="module" src="../assets/js/forms.js"></script>
+
+</body>
+</html>

@@ -1,9 +1,7 @@
 // assets/js/dashboard.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import {
-  getFirestore, collection, getDocs, query, orderBy, doc, getDoc
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // ------------------ Firebase Setup ------------------
 const firebaseConfig = {
@@ -36,145 +34,83 @@ document.getElementById("userDept").textContent = Array.isArray(user.departments
 const nav = document.getElementById("nav");
 const title = document.getElementById("sectionTitle");
 const content = document.getElementById("sectionContent");
-
 const FINANCE_URL = "https://finance.example.com";
 
+// ------------------ Permission Check ------------------
 function hasAccess(section) {
   return user.departments?.includes("ALL") || user.departments?.includes(section);
 }
 
-// ------------------ Render Form ------------------
-async function renderForm(formId) {
-  const snap = await getDoc(doc(db, "forms", formId));
-  if (!snap.exists()) {
-    content.innerHTML = "<p>Form not found.</p>";
-    return;
-  }
-
-  const form = snap.data();
-
-  let html = `
-    <div class="form-card">
-      <img src="${form.image_url}" class="form-header-img" />
-      <h2 class="form-title">${form.title}</h2>
-      <p class="form-desc">${form.description}</p>
-      <form id="dynamicForm">
-  `;
-
-  form.fields.forEach(f => {
-    html += `<div class="form-group">`;
-    html += `<label class="form-label">${f.label}</label>`;
-
-    if (f.type === "select") {
-      html += `<select name="${f.key}" class="form-input" ${f.required ? "required" : ""}>
-                 <option value="">Select</option>
-                 ${f.options?.map(o => `<option value="${o}">${o}</option>`).join("")}
-               </select>`;
-    } else if (f.type === "date" || f.type === "timestamp") {
-      html += `<input type="date" name="${f.key}" class="form-input" ${f.required ? "required" : ""} />`;
-    } else {
-      html += `<input type="text" name="${f.key}" class="form-input" ${f.required ? "required" : ""} />`;
-    }
-
-    html += `</div>`; // close form-group
-  });
-
-  html += `
-        <button type="submit" class="form-submit">Submit</button>
-      </form>
-      <div id="formMsg" class="form-msg"></div>
-    </div>
-  `;
-
-  title.textContent = form.department + " — Form";
-  content.innerHTML = html;
-
-  // ------------------ Handle Form Submission ------------------
-  const dynamicForm = document.getElementById("dynamicForm");
-  const formMsg = document.getElementById("formMsg");
-
-  dynamicForm.addEventListener("submit", async e => {
-    e.preventDefault();
-    const data = {};
-    form.fields.forEach(f => {
-      data[f.key] = dynamicForm[f.key].value.trim();
-    });
-
-    // Add metadata
-    data.submitted_by = user.uid;
-    data.department = form.department;
-    data.submitted_at = new Date();
-
-    try {
-      await db.collection("submissions").add(data);
-      dynamicForm.reset();
-      formMsg.textContent = "Form submitted successfully!";
-      formMsg.className = "form-msg success";
-    } catch (err) {
-      console.error(err);
-      formMsg.textContent = "Submission failed. Try again.";
-      formMsg.className = "form-msg error";
-    }
-  });
-}
-
 // ------------------ Load Modules ------------------
 async function loadSections() {
-  const q = query(collection(db, "modules"), orderBy("order", "asc"));
-  const snap = await getDocs(q);
+  try {
+    const modulesQuery = query(collection(db, "modules"), orderBy("order", "asc"));
+    const snapshot = await getDocs(modulesQuery);
 
-  snap.forEach(docSnap => {
-    const section = docSnap.data();
-    if (!hasAccess(section.name) || section.name === "Finance") return;
+    snapshot.forEach(docSnap => {
+      const section = docSnap.data();
+      if (!hasAccess(section.name) || section.name === "Finance") return;
 
-    const li = document.createElement("li");
-    li.className = "nav-section";
+      const li = document.createElement("li");
+      li.className = "nav-section";
 
-    const header = document.createElement("div");
-    header.className = "nav-header";
-    header.innerHTML = `<span>${section.name}</span><span class="chevron">▸</span>`;
+      const header = document.createElement("div");
+      header.className = "nav-header";
+      header.innerHTML = `<span>${section.name}</span><span class="chevron">▸</span>`;
 
-    const submenu = document.createElement("ul");
-    submenu.className = "submenu";
+      const submenu = document.createElement("ul");
+      submenu.className = "submenu";
 
-    section.items.forEach(item => {
-      const sub = document.createElement("li");
-      sub.textContent = item;
+      section.items.forEach(item => {
+        const sub = document.createElement("li");
+        sub.textContent = item;
 
-      sub.onclick = () => {
-        if (item.toLowerCase() === "forms" && section.name.toLowerCase().includes("paediatric")) {
-          renderForm("paediatric_surgery");
-        } else {
-          title.textContent = `${section.name} — ${item}`;
-          content.innerHTML = `<p>${item} for ${section.name} coming next.</p>`;
-        }
+        // ------------------ FORMS REDIRECT ------------------
+        sub.onclick = () => {
+          if (item.toLowerCase() === "forms") {
+            const formId = section.name.toLowerCase().includes("paediatric")
+              ? "paediatric_surgery"
+              : section.name.toLowerCase().replace(/\s+/g, "_");
+            window.location.href = `forms.html?form=${formId}`;
+          } else {
+            title.textContent = `${section.name} — ${item}`;
+            content.innerHTML = `<p>${item} for ${section.name} coming next.</p>`;
+          }
+        };
+
+        submenu.appendChild(sub);
+      });
+
+      // Accordion toggle
+      header.onclick = () => {
+        submenu.classList.toggle("open");
+        header.classList.toggle("active");
       };
 
-      submenu.appendChild(sub);
+      li.appendChild(header);
+      li.appendChild(submenu);
+      nav.appendChild(li);
     });
 
-    header.onclick = () => {
-      submenu.classList.toggle("open");
-      header.classList.toggle("active");
-    };
+    // ------------------ Finance Button at Bottom ------------------
+    if (hasAccess("Finance")) {
+      const li = document.createElement("li");
+      li.className = "nav-section";
+      const btn = document.createElement("div");
+      btn.className = "nav-header";
+      btn.textContent = "Finance";
+      btn.onclick = () => window.open(FINANCE_URL, "_blank");
+      li.appendChild(btn);
+      nav.appendChild(li);
+    }
 
-    li.appendChild(header);
-    li.appendChild(submenu);
-    nav.appendChild(li);
-  });
-
-  if (hasAccess("Finance")) {
-    const li = document.createElement("li");
-    li.className = "nav-section";
-    const btn = document.createElement("div");
-    btn.className = "nav-header";
-    btn.textContent = "Finance";
-    btn.onclick = () => window.open(FINANCE_URL, "_blank");
-    li.appendChild(btn);
-    nav.appendChild(li);
+  } catch (err) {
+    console.error("Error loading dashboard modules:", err);
+    content.innerHTML = "<p>Failed to load dashboard modules. Refresh the page.</p>";
   }
 }
 
+// ------------------ Initialize ------------------
 loadSections();
 
 // ------------------ Logout ------------------

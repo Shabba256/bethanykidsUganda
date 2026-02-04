@@ -1,96 +1,144 @@
 /* assets/css/forms.css */
 
-/* Overall card container */
-.form-card {
-  background-color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  margin: 20px 0;
-  max-width: 700px;
-  width: 100%;
+* {
   box-sizing: border-box;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
-/* Form header image */
-.form-header-img {
-  width: 100%;
-  max-height: 200px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 15px;
+body {
+  margin: 0;
+  background: #f4f6f9;
+  color: #222;
 }
 
-/* Form title */
-.form-title {
-  font-size: 1.6rem;
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: #2c3e50;
-}
-
-/* Form description */
-.form-desc {
-  font-size: 0.95rem;
-  color: #555555;
-  margin-bottom: 20px;
-}
-
-/* Each field container */
-.form-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 15px;
-}
-
-/* Field label */
-.form-label {
-  font-weight: 600;
-  margin-bottom: 5px;
-  color: #333333;
-}
-
-/* Input and select fields */
-.form-input {
-  padding: 10px;
-  font-size: 1rem;
-  border: 1px solid #cccccc;
-  border-radius: 6px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus {
-  border-color: #3498db;
-}
-
-/* Submit button */
-.form-submit {
-  background-color: #3498db;
-  color: #ffffff;
-  font-size: 1rem;
-  font-weight: 600;
+/* Header */
+.form-header {
+  background: #0f2a44;
   padding: 12px 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.logout-btn {
+  background: #e74c3c;
+  color: #fff;
   border: none;
+  padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  font-weight: 600;
+}
+
+.logout-btn:hover {
+  opacity: 0.9;
+}
+
+/* Layout */
+.form-main {
+  display: flex;
+  justify-content: center;
+  padding: 30px 12px 60px;
+}
+
+.form-card {
+  background: #fff;
+  max-width: 760px;
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  padding: 20px 22px 28px;
+}
+
+/* Header image */
+.form-header-img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+/* Titles */
+.form-title {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 12px 0 6px;
+}
+
+.form-desc {
+  color: #555;
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+/* Form */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.form-input,
+select.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d0d5dd;
+  font-size: 15px;
+  outline: none;
+  transition: 0.15s ease;
+}
+
+.form-input:focus,
+select.form-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* Submit */
+.form-submit {
+  width: 100%;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 10px;
 }
 
 .form-submit:hover {
-  background-color: #2980b9;
+  opacity: 0.95;
 }
 
-/* Success / error messages */
+/* Messages */
 .form-msg {
-  margin-top: 15px;
-  font-size: 0.95rem;
+  margin-top: 12px;
+  font-weight: 600;
+  text-align: center;
 }
 
 .form-msg.success {
-  color: #27ae60;
+  color: #0f9d58;
 }
 
 .form-msg.error {
-  color: #e74c3c;
+  color: #d93025;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .form-card {
+    padding: 16px;
+  }
+
+  .form-title {
+    font-size: 20px;
+  }
 }
