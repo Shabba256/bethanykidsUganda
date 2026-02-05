@@ -7,34 +7,92 @@
 </head>
 <body>
 
-  <div class="admin-layout">
+<div class="admin-layout">
 
-    <!-- Sidebar -->
-    <aside class="admin-sidebar">
-      <h2 class="admin-logo">ADMIN</h2>
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <h2 class="admin-logo">ADMIN</h2>
+    <ul class="admin-nav">
+      <li data-view="dashboard">Dashboard</li>
+      <li data-view="forms">Manage Forms</li>
+      <li data-view="duplicate">Duplicate Form</li>
+      <li data-view="newForm">New Department / Form</li>
+      <li data-view="users">Admins</li>
+    </ul>
+    <button onclick="logout()" class="logout-btn">Logout</button>
+  </aside>
 
-      <ul class="admin-nav">
-        <li data-view="dashboard">Dashboard</li>
-        <li data-view="forms">Manage Forms</li>
-        <li data-view="duplicate">Duplicate Form</li>
-        <li data-view="users">Admins</li>
-      </ul>
+  <!-- Main Content -->
+  <main class="admin-content">
+    <h1 id="adminTitle">Admin Panel</h1>
+    <div id="adminContent" class="admin-card">
+      Welcome, Super Admin 👋<br><br>
+      Select an action from the left.
+    </div>
 
-      <button onclick="logout()" class="logout-btn">Logout</button>
-    </aside>
+    <!-- Duplicate Form Section -->
+    <div id="duplicateFormSection" style="display:none; margin-top:20px;">
+      <h3>Duplicate Form</h3>
+      <label>Department:</label>
+      <select id="departmentSelect"></select><br><br>
+      <label>Version to Duplicate:</label>
+      <select id="versionSelect"></select><br><br>
+      <button id="duplicateBtn">Duplicate Form</button>
+      <p id="duplicateStatus"></p>
+    </div>
 
-    <!-- Main -->
-    <main class="admin-content">
-      <h1 id="adminTitle">Admin Panel</h1>
-      <div id="adminContent" class="admin-card">
-        Welcome, Super Admin 👋  
-        <br><br>
-        Select an action from the left.
-      </div>
-    </main>
+    <!-- Manage Forms Section -->
+    <div id="manageFormsSection" style="display:none; margin-top:20px;">
+      <h3>Manage Forms</h3>
+      <table border="1" cellpadding="10">
+        <thead>
+          <tr>
+            <th>Department</th>
+            <th>Version</th>
+            <th>Active</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="formsTableBody"></tbody>
+      </table>
+    </div>
 
-  </div>
+    <!-- New Department & Form Section -->
+    <div id="newFormSection" style="display:none; margin-top:20px;">
+      <h3>Create New Department & Draft Form</h3>
+      <label>Department Name:</label>
+      <input type="text" id="newDepartment" placeholder="Department Name"><br><br>
+      <label>Form Title:</label>
+      <input type="text" id="newFormTitle" placeholder="Form Title"><br><br>
+      <label>Form Description:</label>
+      <textarea id="newFormDescription" placeholder="Description"></textarea><br><br>
+      <label>Image URL:</label>
+      <input type="text" id="newFormImage" placeholder="Image URL"><br><br>
+      <button id="createFormBtn">Create Draft Form</button>
+      <p id="newFormStatus"></p>
+    </div>
 
-  <script type="module" src="../assets/js/admin.js"></script>
+    <!-- Edit Form Modal with Fields -->
+    <div id="editFormModal" style="display:none; background:#fff; padding:20px; border-radius:10px; max-width:600px; position:fixed; top:10%; left:50%; transform:translateX(-50%); box-shadow:0 8px 18px rgba(0,0,0,0.1); overflow:auto; max-height:80%;">
+      <h3>Edit Form</h3>
+      <label>Title:</label>
+      <input type="text" id="editTitle" style="width:100%; margin-bottom:10px;">
+      <label>Description:</label>
+      <textarea id="editDescription" style="width:100%; margin-bottom:10px;"></textarea>
+      <label>Image URL:</label>
+      <input type="text" id="editImage" style="width:100%; margin-bottom:10px;">
+      <h4>Fields</h4>
+      <div id="fieldsContainer"></div>
+      <button id="addFieldBtn">Add Field</button>
+      <br><br>
+      <button id="saveEditBtn">Save Changes</button>
+      <button onclick="closeEditModal()">Cancel</button>
+      <p id="editStatus"></p>
+    </div>
+
+  </main>
+</div>
+
+<script type="module" src="../assets/js/admin.js"></script>
 </body>
 </html>

@@ -10,6 +10,7 @@ body {
   background: #f4f6f9;
 }
 
+/* Layout */
 .admin-layout {
   display: grid;
   grid-template-columns: 240px 1fr;
@@ -28,6 +29,8 @@ body {
 .admin-logo {
   margin-bottom: 24px;
   letter-spacing: 2px;
+  font-size: 1.5em;
+  font-weight: bold;
 }
 
 .admin-nav {
@@ -42,10 +45,11 @@ body {
   border-radius: 6px;
   cursor: pointer;
   margin-bottom: 6px;
+  transition: 0.2s;
 }
 
 .admin-nav li:hover {
-  background: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.15);
 }
 
 .logout-btn {
@@ -56,17 +60,150 @@ body {
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
+  transition: 0.2s;
+}
+
+.logout-btn:hover {
+  background: #c0392b;
 }
 
 /* Main */
 .admin-content {
   padding: 30px;
+  overflow-y: auto;
 }
 
+/* Card */
 .admin-card {
   background: #fff;
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 8px 18px rgba(0,0,0,0.08);
   max-width: 900px;
+}
+
+/* Sections */
+#duplicateFormSection, #manageFormsSection, #newFormSection {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  margin-top: 20px;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background-color: #f1f1f1;
+}
+
+button {
+  cursor: pointer;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #0f2a44;
+  color: #fff;
+  margin-right: 5px;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #1e3b5c;
+}
+
+/* Edit Form Modal */
+#editFormModal {
+  background:#fff;
+  padding:20px;
+  border-radius:10px;
+  max-width:600px;
+  position:fixed;
+  top:10%;
+  left:50%;
+  transform:translateX(-50%);
+  box-shadow:0 8px 18px rgba(0,0,0,0.1);
+  overflow:auto;
+  max-height:80%;
+  z-index: 1000;
+}
+
+/* Field Rows */
+.fieldRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.fieldRow input.fieldName,
+.fieldRow select.fieldType,
+.fieldRow textarea.fieldOptions {
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  min-width: 150px;
+}
+
+.fieldRow textarea.fieldOptions {
+  width: 100%;
+  margin-top: 5px;
+  resize: vertical;
+  display: block;
+}
+
+/* Add Field Button */
+#addFieldBtn {
+  background: #27ae60;
+}
+
+#addFieldBtn:hover {
+  background: #1e8449;
+}
+
+/* Save Button */
+#saveEditBtn {
+  background: #2980b9;
+  margin-top: 10px;
+}
+
+#saveEditBtn:hover {
+  background: #1f618d;
+}
+
+/* Status Text */
+#editStatus, #duplicateStatus, #newFormStatus {
+  margin-top: 10px;
+  font-weight: 600;
+  color: #0f2a44;
+}
+
+/* Responsive */
+@media(max-width:768px){
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+  .admin-sidebar {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .admin-nav {
+    display: flex;
+    gap: 10px;
+  }
+  .admin-nav li {
+    margin-bottom: 0;
+  }
 }
