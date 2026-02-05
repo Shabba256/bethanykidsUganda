@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bethany Kids Uganda | Admin</title>
+  <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+
+  <div class="admin-layout">
+
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+      <h2 class="admin-logo">ADMIN</h2>
+
+      <ul class="admin-nav">
+        <li data-view="dashboard">Dashboard</li>
+        <li data-view="forms">Manage Forms</li>
+        <li data-view="duplicate">Duplicate Form</li>
+        <li data-view="users">Admins</li>
+      </ul>
+
+      <button onclick="logout()" class="logout-btn">Logout</button>
+    </aside>
+
+    <!-- Main -->
+    <main class="admin-content">
+      <h1 id="adminTitle">Admin Panel</h1>
+      <div id="adminContent" class="admin-card">
+        Welcome, Super Admin 👋  
+        <br><br>
+        Select an action from the left.
+      </div>
+    </main>
+
+  </div>
+
+  <script type="module" src="../assets/js/admin.js"></script>
+</body>
+</html>
