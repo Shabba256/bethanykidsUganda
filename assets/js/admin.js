@@ -9,7 +9,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCZ5L0dUrVt0MK5DDGuWZQlBOMitKYUuag",
   authDomain: "bethany-system.firebaseapp.com",
   projectId: "bethany-system",
-  storageBucket: "bethany-system-firebasestorage.app",
+  storageBucket: "bethany-system.firebasestorage.app",
   messagingSenderId: "267285501238",
   appId: "1:267285501238:web:b039650181d6c14b3acf97"
 };
@@ -75,13 +75,21 @@ document.querySelectorAll(".admin-nav li").forEach(li => {
     newFormSection.style.display = "none";
     editModal.style.display = "none";
 
-    if(view==="duplicate"){ duplicateSection.style.display="block"; await loadDepartments(); }
-    else if(view==="forms"){ manageFormsSection.style.display="block"; await loadManageForms(); }
-    else if(view==="newForm"){ newFormSection.style.display="block"; }
+    if(view==="duplicate"){ 
+      duplicateSection.style.display="block"; 
+      await loadDepartments(); 
+    }
+    else if(view==="forms"){ 
+      manageFormsSection.style.display="block"; 
+      await loadManageForms(); 
+    }
+    else if(view==="newForm"){ 
+      newFormSection.style.display="block"; 
+    }
   };
 });
 
-// ------------------ Load Forms ------------------
+// ------------------ Load Departments & Versions ------------------
 async function loadDepartments(){
   const snap = await getDocs(collection(db,"forms"));
   allForms = [];
@@ -162,20 +170,27 @@ window.editForm = async (formId)=>{
   editModal.style.display="block";
 };
 
+// ------------------ Add Field Input (Text, Dropdown, Radio, Checkbox) ------------------
 function addFieldInput(label="", type="text", required=false, options=[]){
   const div = document.createElement("div");
   div.className="fieldRow";
   div.innerHTML=`
     <input placeholder="Label" value="${label}" class="fieldName" required>
+
     <select class="fieldType">
       <option value="text">Text</option>
       <option value="number">Number</option>
       <option value="textarea">Textarea</option>
-      <option value="select">Dropdown</option>
       <option value="date">Date</option>
+      <option value="select">Dropdown</option>
+      <option value="radio">Radio</option>
+      <option value="checkbox">Checkbox</option>
     </select>
+
     <label><input type="checkbox" class="fieldRequired" ${required?"checked":""}>Required</label>
-    <textarea class="fieldOptions" placeholder="Options (comma separated)" style="display:${type==="select"?"block":"none"};">${options.join(",")}</textarea>
+
+    <textarea class="fieldOptions" placeholder="Options (comma separated)" style="display:${["select","radio","checkbox"].includes(type)?"block":"none"};">${options.join(",")}</textarea>
+
     <button class="removeFieldBtn">Remove</button>
   `;
 
@@ -184,8 +199,12 @@ function addFieldInput(label="", type="text", required=false, options=[]){
   typeSelect.value = type;
 
   typeSelect.onchange = ()=> {
-    optionsInput.style.display = typeSelect.value==="select" ? "block" : "none";
-    if(typeSelect.value!=="select") optionsInput.value="";
+    if(["select","radio","checkbox"].includes(typeSelect.value)){
+      optionsInput.style.display = "block";
+    } else {
+      optionsInput.style.display = "none";
+      optionsInput.value = "";
+    }
   };
 
   div.querySelector(".removeFieldBtn").onclick=()=>div.remove();
@@ -195,7 +214,7 @@ function addFieldInput(label="", type="text", required=false, options=[]){
 addFieldBtn.onclick=()=>addFieldInput();
 
 // ------------------ Save Form ------------------
-saveEditBtn.onclick=async ()=>{
+saveEditBtn.onclick = async ()=>{
   const fields=[];
   let invalid=false;
 
@@ -203,10 +222,11 @@ saveEditBtn.onclick=async ()=>{
     const label = r.querySelector(".fieldName").value.trim();
     const type = r.querySelector(".fieldType").value;
     const required = r.querySelector(".fieldRequired").checked;
-    const options = r.querySelector(".fieldOptions").value.split(",").map(o=>o.trim()).filter(Boolean);
+    const options = r.querySelector(".fieldOptions").value
+      .split(",").map(o=>o.trim()).filter(Boolean);
 
     if(!label) invalid=true;
-    if(type==="select" && options.length===0) invalid=true;
+    if(["select","radio","checkbox"].includes(type) && options.length===0) invalid=true;
 
     fields.push({
       label,
