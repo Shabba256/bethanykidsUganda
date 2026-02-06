@@ -1,7 +1,8 @@
-// assets/js/dashboard.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { 
+  getFirestore, collection, getDocs, query, orderBy, where 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // ------------------ Firebase Setup ------------------
 const firebaseConfig = {
@@ -39,13 +40,18 @@ function hasAccess(section) {
   return user.departments?.includes("ALL") || user.departments?.includes(section);
 }
 
-// ------------------ Load Modules ------------------
+// ------------------ Load Modules + Forms ------------------
 async function loadSections() {
   try {
     const modulesQuery = query(collection(db, "modules"), orderBy("order", "asc"));
-    const snapshot = await getDocs(modulesQuery);
+    const modulesSnap = await getDocs(modulesQuery);
 
-    snapshot.forEach(docSnap => {
+    const formsQuery = query(collection(db, "forms"), where("is_active", "==", true));
+    const formsSnap = await getDocs(formsQuery);
+
+    const allForms = formsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    modulesSnap.forEach(docSnap => {
       const section = docSnap.data();
       if (!hasAccess(section.name) || section.name === "Finance") return;
 
@@ -59,42 +65,58 @@ async function loadSections() {
       const submenu = document.createElement("ul");
       submenu.className = "submenu";
 
-      section.items.forEach(item => {
-        const sub = document.createElement("li");
-        sub.textContent = item;
+      // ----------- FORMS (data-driven, no guessing) -----------
+// ----------- Build submenu from Firestore modules.items -----------
+section.items.forEach(item => {
+  const sub = document.createElement("li");
+  sub.textContent = item;
 
-        // ------------------ FORMS / RECORDS ------------------
-        sub.onclick = async () => {
-          const lower = item.toLowerCase();
-          const sectionLower = section.name.toLowerCase();
+  sub.onclick = async () => {
+    const lower = item.toLowerCase();
 
-          if (lower === "forms") {
-            const formId = sectionLower.includes("paediatric")
-              ? "paediatric_surgery"
-              : sectionLower.replace(/\s+/g, "_");
-            window.location.href = `forms.html?form=${formId}`;
-          }
-          else if (lower === "records") {
-            title.textContent = `${section.name} — Records`;
-            content.innerHTML = `<p>Loading records...</p>`;
-            try {
-              const module = await import('./records.js');
-              module.loadRecords(content, user); // Pass container + user
-            } catch (err) {
-              console.error("Failed to load records.js:", err);
-              content.innerHTML = "<p>Failed to load records. Refresh the page.</p>";
-            }
-          }
-          else {
-            title.textContent = `${section.name} — ${item}`;
-            content.innerHTML = `<p>${item} for ${section.name} coming next.</p>`;
-          }
+    if (lower === "forms") {
+      title.textContent = `${section.name} — Forms`;
+      content.innerHTML = "";
+
+      const formsForDept = allForms.filter(f => f.department === section.name);
+
+      if (formsForDept.length === 0) {
+        content.innerHTML = "<p>No active forms for this department.</p>";
+        return;
+      }
+
+      formsForDept.forEach(f => {
+        const btn = document.createElement("button");
+        btn.className = "form-link-btn";
+        btn.textContent = f.title;
+        btn.onclick = () => {
+          window.location.href = `forms.html?form=${f.id}`;
         };
-
-        submenu.appendChild(sub);
+        content.appendChild(btn);
       });
+    }
 
-      // Accordion toggle
+    else if (lower === "records") {
+      title.textContent = `${section.name} — Records`;
+      content.innerHTML = `<p>Loading records...</p>`;
+      try {
+        const module = await import('./records.js');
+        module.loadRecords(content, user);
+      } catch (err) {
+        console.error(err);
+        content.innerHTML = "<p>Failed to load records.</p>";
+      }
+    }
+
+    else {
+      title.textContent = `${section.name} — ${item}`;
+      content.innerHTML = `<p>${item} for ${section.name} coming next.</p>`;
+    }
+  };
+
+  submenu.appendChild(sub);
+});
+
       header.onclick = () => {
         submenu.classList.toggle("open");
         header.classList.toggle("active");
@@ -105,7 +127,7 @@ async function loadSections() {
       nav.appendChild(li);
     });
 
-    // ------------------ Finance Button at Bottom ------------------
+    // ------------------ Finance ------------------
     if (hasAccess("Finance")) {
       const li = document.createElement("li");
       li.className = "nav-section";
@@ -119,11 +141,11 @@ async function loadSections() {
 
   } catch (err) {
     console.error("Error loading dashboard modules:", err);
-    content.innerHTML = "<p>Failed to load dashboard modules. Refresh the page.</p>";
+    content.innerHTML = "<p>Failed to load dashboard modules.</p>";
   }
 }
 
-// ------------------ Initialize ------------------
+// ------------------ Init ------------------
 loadSections();
 
 // ------------------ Logout ------------------
