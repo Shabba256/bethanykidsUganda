@@ -42,6 +42,36 @@ function renderFormCards(forms) {
   `;
 }
 
+function createStats(records) {
+  const total = records.length;
+  const genderCount = { Male: 0, Female: 0 };
+
+  records.forEach(r => {
+    const g = r.gender_of_child || r.gender;
+    if (g) {
+      if (g === "Male") genderCount.Male++;
+      else if (g === "Female") genderCount.Female++;
+    }
+  });
+
+  return `
+    <div class="stats-cards">
+      <div class="card" data-filter="all">
+        <h3>Total</h3>
+        <p>${total}</p>
+      </div>
+      <div class="card" data-filter="Male">
+        <h3>Male</h3>
+        <p>${genderCount.Male}</p>
+      </div>
+      <div class="card" data-filter="Female">
+        <h3>Female</h3>
+        <p>${genderCount.Female}</p>
+      </div>
+    </div>
+  `;
+}
+
 function renderTable(fields, records) {
   const headers = fields.map(f => `<th>${f.label}</th>`).join("");
 
@@ -86,17 +116,8 @@ function exportExcel(fields, records, name) {
   const XLSX = window.XLSX;
 
   const data = records.map(r => {
-    const row = {
-      "Submitted At": formatDate(r.submitted_at),
-      "Submitted By": r.submitted_by || ""
-    };
-
-    fields.forEach(f => {
-      let val = r[f.key] ?? "";
-      if (Array.isArray(val)) val = val.join(", ");
-      row[f.label] = val;
-    });
-
+    const row = { "Submitted At": formatDate(r.submitted_at), "Submitted By": r.submitted_by || "" };
+    fields.forEach(f => { row[f.label] = r[f.key] ?? ""; });
     return row;
   });
 
@@ -114,22 +135,32 @@ function exportPDF(fields, records, name) {
   const body = records.map(r => [
     formatDate(r.submitted_at),
     r.submitted_by || "",
-    ...fields.map(f => {
-      let val = r[f.key] ?? "";
-      if (Array.isArray(val)) val = val.join(", ");
-      return val;
-    })
+    ...fields.map(f => r[f.key] ?? "")
   ]);
 
-  doc.autoTable({
-    head,
-    body,
-    startY: 20,
-    theme: "grid",
-    styles: { fontSize: 8 }
-  });
-
+  doc.autoTable({ head, body, startY: 20, theme: "grid", styles: { fontSize: 8 } });
   doc.save(`${name}_records.pdf`);
+}
+
+// ------------------ Gender Filter ------------------
+function applyGenderFilter(records, fields, container, gender) {
+  let filtered = records;
+  if (gender && gender !== "all") {
+    filtered = records.filter(r => {
+      const g = r.gender_of_child || r.gender;
+      return g === gender;
+    });
+  }
+
+  container.innerHTML = createStats(filtered) + renderTable(fields, filtered);
+
+  document.getElementById("exportExcel").onclick = () => exportExcel(fields, filtered, "Filtered Records");
+  document.getElementById("exportPDF").onclick = () => exportPDF(fields, filtered, "Filtered Records");
+  document.getElementById("backToForms")?.addEventListener("click", () => loadDepartmentForms(container, filtered[0]?.department || ""));
+
+  document.querySelectorAll(".stats-cards .card").forEach(card => {
+    card.onclick = () => applyGenderFilter(records, fields, container, card.dataset.filter);
+  });
 }
 
 // ------------------ Main Entry ------------------
@@ -157,9 +188,7 @@ async function loadDepartmentForms(container, department) {
   container.innerHTML = `<p>Loading ${department} forms...</p>`;
 
   try {
-    const formsSnap = await getDocs(
-      query(collection(db, "forms"), where("department", "==", department), where("is_active", "==", true))
-    );
+    const formsSnap = await getDocs(query(collection(db, "forms"), where("department", "==", department), where("is_active", "==", true)));
 
     if (formsSnap.empty) {
       container.innerHTML = `<p>No active forms for ${department}</p>`;
@@ -186,47 +215,39 @@ async function loadFormRecords(container, department, formId) {
   container.innerHTML = `<p>Loading records...</p>`;
 
   try {
-    const submissionsSnap = await getDocs(
-      query(collection(db, "submissions"), where("department", "==", department), where("form_id", "==", formId), orderBy("submitted_at", "desc"))
-    );
+    const submissionsSnap = await getDocs(query(
+      collection(db, "submissions"),
+      where("department", "==", department),
+      where("form_id", "==", formId),
+      orderBy("submitted_at", "desc")
+    ));
 
     const records = submissionsSnap.docs.map(d => d.data());
-
     if (records.length === 0) {
       container.innerHTML = `<p>No records found for this form.</p>`;
       return;
     }
 
-    // Get form fields
-    const formsSnap = await getDocs(
-      query(collection(db, "forms"), where("id", "==", formId))
-    );
-
+    // Load form fields
+    const formsSnap = await getDocs(query(collection(db, "forms"), where("id", "==", formId)));
     let fields = [];
     if (!formsSnap.empty) {
       const form = formsSnap.docs[0].data();
       fields = form.fields || [];
-      fields.forEach(f => {
-        f.key = f.key || f.label.toLowerCase().replace(/\s+/g, "_");
-      });
+      fields.forEach(f => f.key = f.key || f.label.toLowerCase().replace(/\s+/g, "_"));
     }
 
-    // Auto-add any extra fields from submissions
+    // Auto-add extra keys from submissions
     const extraKeys = new Set();
     records.forEach(r => {
       Object.keys(r).forEach(k => {
-        if (!["submitted_at", "submitted_by", "department", "form_id"].includes(k) && !fields.some(f => f.key === k)) {
-          extraKeys.add(k);
-        }
+        if (!["submitted_at","submitted_by","department","form_id"].includes(k) && !fields.some(f=>f.key===k)) extraKeys.add(k);
       });
     });
-    extraKeys.forEach(k => fields.push({ key: k, label: k.replace(/_/g, " ").toUpperCase() }));
+    extraKeys.forEach(k=>fields.push({key:k,label:k.replace(/_/g," ").toUpperCase()}));
 
-    container.innerHTML = renderTable(fields, records);
-
-    document.getElementById("exportExcel").onclick = () => exportExcel(fields, records, formId);
-    document.getElementById("exportPDF").onclick = () => exportPDF(fields, records, formId);
-    document.getElementById("backToForms").onclick = () => loadDepartmentForms(container, department);
+    // Show table with stats + male/female filter
+    applyGenderFilter(records, fields, container, "all");
 
   } catch (err) {
     console.error(err);
