@@ -6,6 +6,13 @@ import {
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+import {
+  renderBarChart,
+  renderPieChart,
+  renderLineChart,
+  renderDoughnutChart
+} from "./chart.js";
+
 const db = getFirestore();
 
 let ALL_RECORDS = [];
@@ -15,7 +22,7 @@ let ALL_MODULES = [];
 // ---------------- Helpers ----------------
 function groupBy(arr, key) {
   return arr.reduce((acc, cur) => {
-    const k = cur[key] || "Unknown";
+    const k = typeof key === "function" ? key(cur) : (cur[key] || "Unknown");
     acc[k] = acc[k] || [];
     acc[k].push(cur);
     return acc;
@@ -24,7 +31,7 @@ function groupBy(arr, key) {
 
 function monthKey(ts) {
   const d = ts?.toDate ? ts.toDate() : new Date(ts);
-  return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,"0")}`;
+  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}`;
 }
 
 function ageGroup(age) {
@@ -82,41 +89,10 @@ function renderOverview(container) {
     <canvas id="ageChart"></canvas>
   `;
 
-  new Chart(document.getElementById("trendChart"), {
-    type: "line",
-    data: {
-      labels: Object.keys(byMonth),
-      datasets: [{
-        label: "Submissions Over Time",
-        data: Object.values(byMonth).map(v => v.length),
-        fill: true
-      }]
-    }
-  });
-
-  new Chart(document.getElementById("deptChart"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(byDept),
-      datasets: [{ label: "By Department", data: Object.values(byDept).map(v => v.length) }]
-    }
-  });
-
-  new Chart(document.getElementById("genderChart"), {
-    type: "doughnut",
-    data: {
-      labels: ["Male", "Female"],
-      datasets: [{ data: [gender.Male, gender.Female] }]
-    }
-  });
-
-  new Chart(document.getElementById("ageChart"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(ages),
-      datasets: [{ label: "Age Groups", data: Object.values(ages) }]
-    }
-  });
+  renderLineChart("trendChart", Object.keys(byMonth), Object.values(byMonth).map(v => v.length), "Submissions Over Time");
+  renderBarChart("deptChart", Object.keys(byDept), Object.values(byDept).map(v => v.length), "By Department");
+  renderDoughnutChart("genderChart", ["Male", "Female"], [gender.Male, gender.Female], "Gender");
+  renderBarChart("ageChart", Object.keys(ages), Object.values(ages), "Age Groups");
 }
 
 // ---------------- Department Performance ----------------
@@ -128,13 +104,7 @@ function renderDepartments(container) {
     <canvas id="deptPerfChart"></canvas>
   `;
 
-  new Chart(document.getElementById("deptPerfChart"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(byDept),
-      datasets: [{ label: "Total Records", data: Object.values(byDept).map(v => v.length) }]
-    }
-  });
+  renderBarChart("deptPerfChart", Object.keys(byDept), Object.values(byDept).map(v => v.length), "Total Records");
 }
 
 // ---------------- Forms ----------------
@@ -146,13 +116,7 @@ function renderForms(container) {
     <canvas id="formChart"></canvas>
   `;
 
-  new Chart(document.getElementById("formChart"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(byForm),
-      datasets: [{ label: "Submissions Per Form", data: Object.values(byForm).map(v => v.length) }]
-    }
-  });
+  renderBarChart("formChart", Object.keys(byForm), Object.values(byForm).map(v => v.length), "Submissions Per Form");
 }
 
 // ---------------- Trends ----------------
@@ -164,13 +128,7 @@ function renderTrends(container) {
     <canvas id="trendLine"></canvas>
   `;
 
-  new Chart(document.getElementById("trendLine"), {
-    type: "line",
-    data: {
-      labels: Object.keys(byMonth),
-      datasets: [{ label: "Growth Trend", data: Object.values(byMonth).map(v => v.length) }]
-    }
-  });
+  renderLineChart("trendLine", Object.keys(byMonth), Object.values(byMonth).map(v => v.length), "Growth Trend");
 }
 
 // ---------------- Demographics ----------------
@@ -188,13 +146,7 @@ function renderDemographics(container) {
     <canvas id="demoChart"></canvas>
   `;
 
-  new Chart(document.getElementById("demoChart"), {
-    type: "pie",
-    data: {
-      labels: ["Male", "Female"],
-      datasets: [{ data: [gender.Male, gender.Female] }]
-    }
-  });
+  renderPieChart("demoChart", ["Male", "Female"], [gender.Male, gender.Female], "Gender Distribution");
 }
 
 // ---------------- Public Entry ----------------

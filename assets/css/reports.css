@@ -1,0 +1,101 @@
+/* =========================
+   Reports UI
+   ========================= */
+
+.reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.reports-header h3 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.reports-filters {
+  display: flex;
+  gap: 10px;
+}
+
+.reports-filters input,
+.reports-filters button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.reports-filters button {
+  background: #4f46e5;
+  color: white;
+  cursor: pointer;
+}
+
+.reports-filters button:hover {
+  background: #4338ca;
+}
+
+/* KPIs */
+.reports-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: white;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.kpi-card h4 {
+  font-size: 14px;
+  color: #555;
+}
+
+.kpi-card p {
+  font-size: 26px;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+/* Charts */
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.report-card {
+  background: white;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.report-card h4 {
+  margin-bottom: 10px;
+}
+
+.report-card.full {
+  grid-column: span 2;
+}
+
+@media (max-width: 900px) {
+  .reports-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-card.full {
+    grid-column: span 1;
+  }
+
+  .reports-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
