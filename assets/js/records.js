@@ -1,6 +1,6 @@
 // assets/js/records.js
 import { 
-  getFirestore, collection, getDocs, query, orderBy, where 
+  getFirestore, collection, getDocs, query, orderBy, where, doc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const db = getFirestore();
@@ -48,10 +48,8 @@ function createStats(records) {
 
   records.forEach(r => {
     const g = r.gender_of_child || r.gender;
-    if (g) {
-      if (g === "Male") genderCount.Male++;
-      else if (g === "Female") genderCount.Female++;
-    }
+    if (g === "Male") genderCount.Male++;
+    if (g === "Female") genderCount.Female++;
   });
 
   return `
@@ -75,7 +73,7 @@ function createStats(records) {
 function renderTable(fields, records) {
   const headers = fields.map(f => `<th>${f.label}</th>`).join("");
 
-  let rows = records.map(r => {
+  const rows = records.map(r => {
     const tds = fields.map(f => {
       let val = r[f.key] ?? "";
       if (Array.isArray(val)) val = val.join(", ");
@@ -116,8 +114,11 @@ function exportExcel(fields, records, name) {
   const XLSX = window.XLSX;
 
   const data = records.map(r => {
-    const row = { "Submitted At": formatDate(r.submitted_at), "Submitted By": r.submitted_by || "" };
-    fields.forEach(f => { row[f.label] = r[f.key] ?? ""; });
+    const row = { 
+      "Submitted At": formatDate(r.submitted_at), 
+      "Submitted By": r.submitted_by || "" 
+    };
+    fields.forEach(f => row[f.label] = r[f.key] ?? "");
     return row;
   });
 
@@ -142,7 +143,7 @@ function exportPDF(fields, records, name) {
   doc.save(`${name}_records.pdf`);
 }
 
-// ------------------ Gender Filter ------------------
+// ------------------ Filters ------------------
 function applyGenderFilter(records, fields, container, gender) {
   let filtered = records;
   if (gender && gender !== "all") {
@@ -154,16 +155,16 @@ function applyGenderFilter(records, fields, container, gender) {
 
   container.innerHTML = createStats(filtered) + renderTable(fields, filtered);
 
-  document.getElementById("exportExcel").onclick = () => exportExcel(fields, filtered, "Filtered Records");
-  document.getElementById("exportPDF").onclick = () => exportPDF(fields, filtered, "Filtered Records");
-  document.getElementById("backToForms")?.addEventListener("click", () => loadDepartmentForms(container, filtered[0]?.department || ""));
+  document.getElementById("exportExcel").onclick = () => exportExcel(fields, filtered, "Filtered_Records");
+  document.getElementById("exportPDF").onclick = () => exportPDF(fields, filtered, "Filtered_Records");
+  document.getElementById("backToForms").onclick = () => loadDepartmentForms(container, filtered[0]?.department || "");
 
   document.querySelectorAll(".stats-cards .card").forEach(card => {
     card.onclick = () => applyGenderFilter(records, fields, container, card.dataset.filter);
   });
 }
 
-// ------------------ Main Entry ------------------
+// ------------------ Main ------------------
 export async function loadRecords(container) {
   container.innerHTML = "<p>Loading departments...</p>";
 
@@ -183,12 +184,16 @@ export async function loadRecords(container) {
   }
 }
 
-// ------------------ Load Forms for Department ------------------
+// ------------------ Load Forms ------------------
 async function loadDepartmentForms(container, department) {
   container.innerHTML = `<p>Loading ${department} forms...</p>`;
 
   try {
-    const formsSnap = await getDocs(query(collection(db, "forms"), where("department", "==", department), where("is_active", "==", true)));
+    const formsSnap = await getDocs(query(
+      collection(db, "forms"),
+      where("department", "==", department),
+      where("is_active", "==", true)
+    ));
 
     if (formsSnap.empty) {
       container.innerHTML = `<p>No active forms for ${department}</p>`;
@@ -210,7 +215,7 @@ async function loadDepartmentForms(container, department) {
   }
 }
 
-// ------------------ Load Records for Form ------------------
+// ------------------ Load Records ------------------
 async function loadFormRecords(container, department, formId) {
   container.innerHTML = `<p>Loading records...</p>`;
 
@@ -222,31 +227,36 @@ async function loadFormRecords(container, department, formId) {
       orderBy("submitted_at", "desc")
     ));
 
-    const records = submissionsSnap.docs.map(d => d.data());
+    const records = submissionsSnap.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+
     if (records.length === 0) {
       container.innerHTML = `<p>No records found for this form.</p>`;
       return;
     }
 
-    // Load form fields
-    const formsSnap = await getDocs(query(collection(db, "forms"), where("id", "==", formId)));
+    const formSnap = await getDoc(doc(db, "forms", formId));
     let fields = [];
-    if (!formsSnap.empty) {
-      const form = formsSnap.docs[0].data();
+
+    if (formSnap.exists()) {
+      const form = formSnap.data();
       fields = form.fields || [];
       fields.forEach(f => f.key = f.key || f.label.toLowerCase().replace(/\s+/g, "_"));
     }
 
-    // Auto-add extra keys from submissions
     const extraKeys = new Set();
     records.forEach(r => {
       Object.keys(r).forEach(k => {
-        if (!["submitted_at","submitted_by","department","form_id"].includes(k) && !fields.some(f=>f.key===k)) extraKeys.add(k);
+        if (!["submitted_at","submitted_by","department","form_id"].includes(k) && !fields.some(f=>f.key===k)) {
+          extraKeys.add(k);
+        }
       });
     });
-    extraKeys.forEach(k=>fields.push({key:k,label:k.replace(/_/g," ").toUpperCase()}));
 
-    // Show table with stats + male/female filter
+    extraKeys.forEach(k => fields.push({ key: k, label: k.replace(/_/g, " ").toUpperCase() }));
+
     applyGenderFilter(records, fields, container, "all");
 
   } catch (err) {
