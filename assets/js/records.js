@@ -30,7 +30,6 @@ function renderTable(fields, records) {
 
   let rows = records.map(r => {
     const tds = fields.map(f => {
-      // <-- Option 1 fix: read top-level submission fields
       let val = r[f.key] ?? "";
       if (Array.isArray(val)) val = val.join(", ");
       return `<td>${val}</td>`;
@@ -123,13 +122,12 @@ export async function loadRecords(container) {
   container.innerHTML = "<p>Loading departments...</p>";
 
   try {
-    // 1️⃣ Load departments from modules
+    // Load departments from modules
     const modulesSnap = await getDocs(query(collection(db, "modules"), orderBy("order", "asc")));
     const modules = modulesSnap.docs.map(d => d.data());
 
     container.innerHTML = renderDepartmentCards(modules);
 
-    // Attach clicks
     document.querySelectorAll(".dept-card").forEach(card => {
       card.onclick = () => loadDepartmentRecords(container, card.dataset.dept);
     });
@@ -145,31 +143,47 @@ async function loadDepartmentRecords(container, department) {
   container.innerHTML = `<p>Loading ${department} records...</p>`;
 
   try {
-    // 2️⃣ Load all submissions for department (ALL versions)
+    // Load all submissions for department
     const submissionsSnap = await getDocs(
       query(collection(db, "submissions"), where("department", "==", department), orderBy("submitted_at", "desc"))
     );
 
     const records = submissionsSnap.docs.map(d => d.data());
 
-    // 3️⃣ Load latest ACTIVE form for columns
+    if (records.length === 0) {
+      container.innerHTML = `<p>No records found for ${department}</p>`;
+      return;
+    }
+
+    // Load latest active form for columns
     const formsSnap = await getDocs(
       query(collection(db, "forms"), where("department", "==", department), where("is_active", "==", true))
     );
 
-    if (formsSnap.empty) {
-      container.innerHTML = `<p>No active form for ${department}</p>`;
-      return;
+    let fields = [];
+    if (!formsSnap.empty) {
+      const activeForm = formsSnap.docs[0].data();
+      fields = activeForm.fields || [];
+      fields.forEach(f => {
+        f.key = f.key || f.label.toLowerCase().replace(/\s+/g, "_");
+      });
     }
 
-    const activeForm = formsSnap.docs[0].data();
-    const fields = activeForm.fields || [];
-
-    // Map form field names to keys in submissions
-    fields.forEach(f => {
-      // Example: "name_of_child" already matches Firestore field names
-      f.key = f.key || f.label.toLowerCase().replace(/\s+/g, "_");
+    // -----------------------------
+    // Auto-add any extra fields from submissions
+    const extraKeys = new Set();
+    records.forEach(r => {
+      Object.keys(r).forEach(k => {
+        if (k !== "submitted_at" && k !== "submitted_by" && !fields.some(f => f.key === k)) {
+          extraKeys.add(k);
+        }
+      });
     });
+
+    extraKeys.forEach(k => {
+      fields.push({ key: k, label: k.replace(/_/g, " ").toUpperCase() });
+    });
+    // -----------------------------
 
     container.innerHTML = renderTable(fields, records);
 
