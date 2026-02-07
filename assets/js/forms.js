@@ -195,3 +195,7 @@ window.logout = async () => {
   await signOut(auth);
   window.location.href = "login.html";
 };
+document.getElementById("homeBtn").onclick = () => {
+  window.location.href = "dashboard.html";
+};
+
