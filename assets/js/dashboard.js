@@ -65,57 +65,69 @@ async function loadSections() {
       const submenu = document.createElement("ul");
       submenu.className = "submenu";
 
-      // ----------- FORMS (data-driven, no guessing) -----------
-// ----------- Build submenu from Firestore modules.items -----------
-section.items.forEach(item => {
-  const sub = document.createElement("li");
-  sub.textContent = item;
+      // ----------- Build submenu from Firestore modules.items -----------
+      section.items.forEach(item => {
+        const sub = document.createElement("li");
+        sub.textContent = item;
 
-  sub.onclick = async () => {
-    const lower = item.toLowerCase();
+        sub.onclick = async () => {
+          const lower = item.toLowerCase();
 
-    if (lower === "forms") {
-      title.textContent = `${section.name} — Forms`;
-      content.innerHTML = "";
+          if (lower === "forms") {
+            title.textContent = `${section.name} — Forms`;
+            content.innerHTML = "";
 
-      const formsForDept = allForms.filter(f => f.department === section.name);
+            const formsForDept = allForms.filter(f => f.department === section.name);
 
-      if (formsForDept.length === 0) {
-        content.innerHTML = "<p>No active forms for this department.</p>";
-        return;
-      }
+            if (formsForDept.length === 0) {
+              content.innerHTML = "<p>No active forms for this department.</p>";
+              return;
+            }
 
-      formsForDept.forEach(f => {
-        const btn = document.createElement("button");
-        btn.className = "form-link-btn";
-        btn.textContent = f.title;
-        btn.onclick = () => {
-          window.location.href = `forms.html?form=${f.id}`;
+            formsForDept.forEach(f => {
+              const btn = document.createElement("button");
+              btn.className = "form-link-btn";
+              btn.textContent = f.title;
+              btn.onclick = () => {
+                window.location.href = `forms.html?form=${f.id}`;
+              };
+              content.appendChild(btn);
+            });
+          }
+
+          else if (lower === "records") {
+            title.textContent = `${section.name} — Records`;
+            content.innerHTML = `<p>Loading records...</p>`;
+            try {
+              const module = await import('./records.js');
+              module.loadRecords(content, user);
+            } catch (err) {
+              console.error(err);
+              content.innerHTML = "<p>Failed to load records.</p>";
+            }
+          }
+
+          // ✅ ONLY ADDITION: REPORTS HOOK
+          else if (lower === "reports") {
+            title.textContent = `${section.name} — Reports`;
+            content.innerHTML = `<p>Loading reports...</p>`;
+            try {
+              const module = await import('./reports.js');
+              module.loadReports(content);
+            } catch (err) {
+              console.error(err);
+              content.innerHTML = "<p>Failed to load reports.</p>";
+            }
+          }
+
+          else {
+            title.textContent = `${section.name} — ${item}`;
+            content.innerHTML = `<p>${item} for ${section.name} coming next.</p>`;
+          }
         };
-        content.appendChild(btn);
+
+        submenu.appendChild(sub);
       });
-    }
-
-    else if (lower === "records") {
-      title.textContent = `${section.name} — Records`;
-      content.innerHTML = `<p>Loading records...</p>`;
-      try {
-        const module = await import('./records.js');
-        module.loadRecords(content, user);
-      } catch (err) {
-        console.error(err);
-        content.innerHTML = "<p>Failed to load records.</p>";
-      }
-    }
-
-    else {
-      title.textContent = `${section.name} — ${item}`;
-      content.innerHTML = `<p>${item} for ${section.name} coming next.</p>`;
-    }
-  };
-
-  submenu.appendChild(sub);
-});
 
       header.onclick = () => {
         submenu.classList.toggle("open");
