@@ -25,10 +25,26 @@ function renderDepartmentCards(modules) {
   `;
 }
 
-function renderTable(fields, records) {
+function renderFormCards(forms) {
+  return `
+    <div class="dept-cards">
+      ${forms.map(f => `
+        <div class="dept-card" data-form-id="${f.id}" data-dept="${f.department}">
+          <h3>${f.title}</h3>
+          <p>${f.version ? "v" + f.version : ""} • ${f.is_active ? "Active" : "Inactive"}</p>
+        </div>
+      `).join("")}
+    </div>
+    <div style="margin-top:16px;">
+      <button id="backToDepartments" class="btn secondary">← Back to Departments</button>
+    </div>
+  `;
+}
+
+function renderTable(fields, records, dept) {
   const headers = fields.map(f => `<th>${f.label}</th>`).join("");
 
-  let rows = records.map(r => {
+  const rows = records.map(r => {
     const tds = fields.map(f => {
       let val = r[f.key] ?? "";
       if (Array.isArray(val)) val = val.join(", ");
@@ -48,7 +64,7 @@ function renderTable(fields, records) {
     <div class="records-actions">
       <button id="exportExcel" class="btn">Export Excel</button>
       <button id="exportPDF" class="btn">Export PDF</button>
-      <button id="backToDepartments" class="btn secondary">← Back</button>
+      <button id="backToForms" class="btn secondary">← Back to Forms</button>
     </div>
 
     <table class="records-table">
@@ -67,19 +83,13 @@ function renderTable(fields, records) {
 // ------------------ Export ------------------
 function exportExcel(fields, records, dept) {
   const XLSX = window.XLSX;
-
   const data = records.map(r => {
-    const row = {
-      "Submitted At": formatDate(r.submitted_at),
-      "Submitted By": r.submitted_by || ""
-    };
-
+    const row = { "Submitted At": formatDate(r.submitted_at), "Submitted By": r.submitted_by || "" };
     fields.forEach(f => {
       let val = r[f.key] ?? "";
       if (Array.isArray(val)) val = val.join(", ");
       row[f.label] = val;
     });
-
     return row;
   });
 
@@ -92,107 +102,117 @@ function exportExcel(fields, records, dept) {
 function exportPDF(fields, records, dept) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-
   const head = [["Submitted At", "Submitted By", ...fields.map(f => f.label)]];
-  const body = records.map(r => {
-    return [
-      formatDate(r.submitted_at),
-      r.submitted_by || "",
-      ...fields.map(f => {
-        let val = r[f.key] ?? "";
-        if (Array.isArray(val)) val = val.join(", ");
-        return val;
-      })
-    ];
-  });
+  const body = records.map(r => [
+    formatDate(r.submitted_at),
+    r.submitted_by || "",
+    ...fields.map(f => {
+      let val = r[f.key] ?? "";
+      if (Array.isArray(val)) val = val.join(", ");
+      return val;
+    })
+  ]);
 
-  doc.autoTable({
-    head,
-    body,
-    startY: 20,
-    theme: "grid",
-    styles: { fontSize: 8 }
-  });
-
+  doc.autoTable({ head, body, startY: 20, theme: "grid", styles: { fontSize: 8 } });
   doc.save(`${dept}_records.pdf`);
 }
 
 // ------------------ Main Entry ------------------
 export async function loadRecords(container) {
   container.innerHTML = "<p>Loading departments...</p>";
-
   try {
-    // Load departments from modules
     const modulesSnap = await getDocs(query(collection(db, "modules"), orderBy("order", "asc")));
     const modules = modulesSnap.docs.map(d => d.data());
 
     container.innerHTML = renderDepartmentCards(modules);
 
     document.querySelectorAll(".dept-card").forEach(card => {
-      card.onclick = () => loadDepartmentRecords(container, card.dataset.dept);
+      card.onclick = () => loadDepartmentForms(container, card.dataset.dept);
     });
-
   } catch (err) {
     console.error(err);
     container.innerHTML = "<p>Failed to load departments.</p>";
   }
 }
 
-// ------------------ Load Department Records ------------------
-async function loadDepartmentRecords(container, department) {
-  container.innerHTML = `<p>Loading ${department} records...</p>`;
-
+// ------------------ Load Department Forms ------------------
+async function loadDepartmentForms(container, department) {
+  container.innerHTML = `<p>Loading forms for ${department}...</p>`;
   try {
-    // Load all submissions for department
-    const submissionsSnap = await getDocs(
-      query(collection(db, "submissions"), where("department", "==", department), orderBy("submitted_at", "desc"))
-    );
+    const formsSnap = await getDocs(query(
+      collection(db, "forms"),
+      where("department", "==", department),
+      orderBy("version", "desc")
+    ));
+    const forms = formsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    const records = submissionsSnap.docs.map(d => d.data());
-
-    if (records.length === 0) {
-      container.innerHTML = `<p>No records found for ${department}</p>`;
+    if (forms.length === 0) {
+      container.innerHTML = `<p>No forms found for ${department}</p>
+        <button id="backToDepartments" class="btn secondary">← Back to Departments</button>`;
+      document.getElementById("backToDepartments").onclick = () => loadRecords(container);
       return;
     }
 
-    // Load latest active form for columns
-    const formsSnap = await getDocs(
-      query(collection(db, "forms"), where("department", "==", department), where("is_active", "==", true))
-    );
+    container.innerHTML = renderFormCards(forms);
 
-    let fields = [];
-    if (!formsSnap.empty) {
-      const activeForm = formsSnap.docs[0].data();
-      fields = activeForm.fields || [];
-      fields.forEach(f => {
-        f.key = f.key || f.label.toLowerCase().replace(/\s+/g, "_");
-      });
+    // Attach clicks
+    document.querySelectorAll(".dept-card").forEach(card => {
+      card.onclick = () => loadFormRecords(container, card.dataset.formId, card.dataset.dept);
+    });
+
+    document.getElementById("backToDepartments").onclick = () => loadRecords(container);
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "<p>Failed to load forms.</p>";
+  }
+}
+
+// ------------------ Load Form Records ------------------
+async function loadFormRecords(container, formId, department) {
+  container.innerHTML = `<p>Loading records for ${department}...</p>`;
+  try {
+    // Load submissions for this form
+    const submissionsSnap = await getDocs(query(
+      collection(db, "submissions"),
+      where("form_id", "==", formId),
+      orderBy("submitted_at", "desc")
+    ));
+    const records = submissionsSnap.docs.map(d => d.data());
+
+    if (records.length === 0) {
+      container.innerHTML = `<p>No records found for this form</p>
+        <button id="backToForms" class="btn secondary">← Back to Forms</button>`;
+      document.getElementById("backToForms").onclick = () => loadDepartmentForms(container, department);
+      return;
     }
 
-    // -----------------------------
+    // Load form fields
+    const formSnap = await getDocs(query(collection(db, "forms"), where("__name__", "==", formId)));
+    let fields = [];
+    if (!formSnap.empty) {
+      const form = formSnap.docs[0].data();
+      fields = form.fields || [];
+      fields.forEach(f => f.key = f.key || f.label.toLowerCase().replace(/\s+/g, "_"));
+    }
+
     // Auto-add any extra fields from submissions
     const extraKeys = new Set();
     records.forEach(r => {
       Object.keys(r).forEach(k => {
-        if (k !== "submitted_at" && k !== "submitted_by" && !fields.some(f => f.key === k)) {
+        if (!["submitted_at", "submitted_by", "form_id", "department"].includes(k) && !fields.some(f => f.key === k)) {
           extraKeys.add(k);
         }
       });
     });
+    extraKeys.forEach(k => fields.push({ key: k, label: k.replace(/_/g, " ").toUpperCase() }));
 
-    extraKeys.forEach(k => {
-      fields.push({ key: k, label: k.replace(/_/g, " ").toUpperCase() });
-    });
-    // -----------------------------
-
-    container.innerHTML = renderTable(fields, records);
+    container.innerHTML = renderTable(fields, records, department);
 
     document.getElementById("exportExcel").onclick = () => exportExcel(fields, records, department);
     document.getElementById("exportPDF").onclick = () => exportPDF(fields, records, department);
-    document.getElementById("backToDepartments").onclick = () => loadRecords(container);
-
+    document.getElementById("backToForms").onclick = () => loadDepartmentForms(container, department);
   } catch (err) {
     console.error(err);
-    container.innerHTML = "<p>Failed to load department records.</p>";
+    container.innerHTML = "<p>Failed to load form records.</p>";
   }
 }
