@@ -1,159 +1,184 @@
 // assets/js/records.js
-
-import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { 
+  getFirestore, collection, getDocs, query, orderBy, where 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const db = getFirestore();
 
-// ------------------ DOM Elements ------------------
-const content = document.getElementById("sectionContent");
-content.innerHTML = "<p>Loading records...</p>";
-
-// ------------------ Helper Functions ------------------
+// ------------------ Helpers ------------------
 function formatDate(ts) {
   if (!ts) return "";
   return ts.toDate ? ts.toDate().toLocaleString() : new Date(ts).toLocaleString();
 }
 
-function createStats(records) {
-  const total = records.length;
-  const byDept = {};
-  const genderCount = { Male: 0, Female: 0 };
-
-  records.forEach(r => {
-    const dept = r.department || "Unknown";
-    byDept[dept] = (byDept[dept] || 0) + 1;
-
-    if (r.gender) {
-      if (r.gender === "Male") genderCount.Male++;
-      else if (r.gender === "Female") genderCount.Female++;
-    }
-  });
-
-  let statsHTML = `<div class="stats-cards">`;
-  statsHTML += `<div class="card"><h3>Total Submissions</h3><p>${total}</p></div>`;
-  for (const [dept, count] of Object.entries(byDept)) {
-    statsHTML += `<div class="card"><h3>${dept}</h3><p>${count}</p></div>`;
-  }
-  statsHTML += `<div class="card"><h3>Gender - Male</h3><p>${genderCount.Male}</p></div>`;
-  statsHTML += `<div class="card"><h3>Gender - Female</h3><p>${genderCount.Female}</p></div>`;
-  statsHTML += `</div>`;
-
-  return statsHTML;
+// ------------------ UI Builders ------------------
+function renderDepartmentCards(modules) {
+  return `
+    <div class="dept-cards">
+      ${modules.map(m => `
+        <div class="dept-card" data-dept="${m.name}">
+          <h3>${m.name}</h3>
+          <p>View records</p>
+        </div>
+      `).join("")}
+    </div>
+  `;
 }
 
-function createTable(records) {
-  let html = `
+function renderTable(fields, records) {
+  const headers = fields.map(f => `<th>${f.label}</th>`).join("");
+
+  let rows = records.map(r => {
+    const tds = fields.map(f => {
+      // <-- Option 1 fix: read top-level submission fields
+      let val = r[f.key] ?? "";
+      if (Array.isArray(val)) val = val.join(", ");
+      return `<td>${val}</td>`;
+    }).join("");
+
+    return `
+      <tr>
+        <td>${formatDate(r.submitted_at)}</td>
+        <td>${r.submitted_by || ""}</td>
+        ${tds}
+      </tr>
+    `;
+  }).join("");
+
+  return `
     <div class="records-actions">
       <button id="exportExcel" class="btn">Export Excel</button>
       <button id="exportPDF" class="btn">Export PDF</button>
+      <button id="backToDepartments" class="btn secondary">← Back</button>
     </div>
+
     <table class="records-table">
       <thead>
         <tr>
           <th>Submitted At</th>
-          <th>Department</th>
-          <th>Email</th>
-          <th>Child Name</th>
-          <th>ID</th>
-          <th>DOB</th>
-          <th>Age</th>
-          <th>Gender</th>
-          <th>Address</th>
-          <th>Contact</th>
           <th>Submitted By</th>
-          <th>Visit Date</th>
+          ${headers}
         </tr>
       </thead>
-      <tbody>
+      <tbody>${rows}</tbody>
+    </table>
   `;
-
-  records.forEach(r => {
-    html += `<tr>
-      <td>${formatDate(r.submitted_at)}</td>
-      <td>${r.department || ""}</td>
-      <td>${r.email || ""}</td>
-      <td>${r.child_name || ""}</td>
-      <td>${r.child_id || ""}</td>
-      <td>${formatDate(r.dob)}</td>
-      <td>${r.age || ""}</td>
-      <td>${r.gender || ""}</td>
-      <td>${r.address || ""}</td>
-      <td>${r.contact || ""}</td>
-      <td>${r.submitted_by || ""}</td>
-      <td>${formatDate(r.visit_date)}</td>
-    </tr>`;
-  });
-
-  html += `</tbody></table>`;
-  return html;
 }
 
-// ------------------ Export Functions ------------------
-function exportExcel(records) {
+// ------------------ Export ------------------
+function exportExcel(fields, records, dept) {
   const XLSX = window.XLSX;
-  const data = records.map(r => ({
-    "Submitted At": formatDate(r.submitted_at),
-    "Department": r.department || "",
-    "Email": r.email || "",
-    "Child Name": r.child_name || "",
-    "ID": r.child_id || "",
-    "DOB": formatDate(r.dob),
-    "Age": r.age || "",
-    "Gender": r.gender || "",
-    "Address": r.address || "",
-    "Contact": r.contact || "",
-    "Submitted By": r.submitted_by || "",
-    "Visit Date": formatDate(r.visit_date)
-  }));
+
+  const data = records.map(r => {
+    const row = {
+      "Submitted At": formatDate(r.submitted_at),
+      "Submitted By": r.submitted_by || ""
+    };
+
+    fields.forEach(f => {
+      let val = r[f.key] ?? "";
+      if (Array.isArray(val)) val = val.join(", ");
+      row[f.label] = val;
+    });
+
+    return row;
+  });
+
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Records");
-  XLSX.writeFile(wb, "records.xlsx");
+  XLSX.utils.book_append_sheet(wb, ws, dept);
+  XLSX.writeFile(wb, `${dept}_records.xlsx`);
 }
 
-function exportPDF(records) {
+function exportPDF(fields, records, dept) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  const rows = records.map(r => [
-    formatDate(r.submitted_at),
-    r.department || "",
-    r.email || "",
-    r.child_name || "",
-    r.child_id || "",
-    formatDate(r.dob),
-    r.age || "",
-    r.gender || "",
-    r.address || "",
-    r.contact || "",
-    r.submitted_by || "",
-    formatDate(r.visit_date)
-  ]);
+
+  const head = [["Submitted At", "Submitted By", ...fields.map(f => f.label)]];
+  const body = records.map(r => {
+    return [
+      formatDate(r.submitted_at),
+      r.submitted_by || "",
+      ...fields.map(f => {
+        let val = r[f.key] ?? "";
+        if (Array.isArray(val)) val = val.join(", ");
+        return val;
+      })
+    ];
+  });
+
   doc.autoTable({
-    head: [["Submitted At","Department","Email","Child Name","ID","DOB","Age","Gender","Address","Contact","Submitted By","Visit Date"]],
-    body: rows,
+    head,
+    body,
     startY: 20,
-    theme: 'grid',
+    theme: "grid",
     styles: { fontSize: 8 }
   });
-  doc.save("records.pdf");
+
+  doc.save(`${dept}_records.pdf`);
 }
 
-// ------------------ Load Records ------------------
-export async function loadRecords() {
-  content.innerHTML = "<p>Loading records...</p>";
+// ------------------ Main Entry ------------------
+export async function loadRecords(container) {
+  container.innerHTML = "<p>Loading departments...</p>";
 
   try {
-    const q = query(collection(db, "submissions"), orderBy("submitted_at", "desc"));
-    const snap = await getDocs(q);
-    const records = snap.docs.map(d => d.data());
+    // 1️⃣ Load departments from modules
+    const modulesSnap = await getDocs(query(collection(db, "modules"), orderBy("order", "asc")));
+    const modules = modulesSnap.docs.map(d => d.data());
 
-    content.innerHTML = createStats(records) + createTable(records);
+    container.innerHTML = renderDepartmentCards(modules);
 
-    document.getElementById("exportExcel").onclick = () => exportExcel(records);
-    document.getElementById("exportPDF").onclick = () => exportPDF(records);
+    // Attach clicks
+    document.querySelectorAll(".dept-card").forEach(card => {
+      card.onclick = () => loadDepartmentRecords(container, card.dataset.dept);
+    });
 
   } catch (err) {
-    console.error("Error loading records:", err);
-    content.innerHTML = "<p>Failed to load records.</p>";
+    console.error(err);
+    container.innerHTML = "<p>Failed to load departments.</p>";
+  }
+}
+
+// ------------------ Load Department Records ------------------
+async function loadDepartmentRecords(container, department) {
+  container.innerHTML = `<p>Loading ${department} records...</p>`;
+
+  try {
+    // 2️⃣ Load all submissions for department (ALL versions)
+    const submissionsSnap = await getDocs(
+      query(collection(db, "submissions"), where("department", "==", department), orderBy("submitted_at", "desc"))
+    );
+
+    const records = submissionsSnap.docs.map(d => d.data());
+
+    // 3️⃣ Load latest ACTIVE form for columns
+    const formsSnap = await getDocs(
+      query(collection(db, "forms"), where("department", "==", department), where("is_active", "==", true))
+    );
+
+    if (formsSnap.empty) {
+      container.innerHTML = `<p>No active form for ${department}</p>`;
+      return;
+    }
+
+    const activeForm = formsSnap.docs[0].data();
+    const fields = activeForm.fields || [];
+
+    // Map form field names to keys in submissions
+    fields.forEach(f => {
+      // Example: "name_of_child" already matches Firestore field names
+      f.key = f.key || f.label.toLowerCase().replace(/\s+/g, "_");
+    });
+
+    container.innerHTML = renderTable(fields, records);
+
+    document.getElementById("exportExcel").onclick = () => exportExcel(fields, records, department);
+    document.getElementById("exportPDF").onclick = () => exportPDF(fields, records, department);
+    document.getElementById("backToDepartments").onclick = () => loadRecords(container);
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "<p>Failed to load department records.</p>";
   }
 }
