@@ -16,8 +16,7 @@ import {
 const db = getFirestore();
 
 let ALL_RECORDS = [];
-let ALL_FORMS = [];
-let ALL_MODULES = [];
+let CURRENT_REPORT = null;
 
 // ---------------- Helpers ----------------
 function groupBy(arr, key) {
@@ -29,149 +28,135 @@ function groupBy(arr, key) {
   }, {});
 }
 
-function monthKey(ts) {
-  const d = ts?.toDate ? ts.toDate() : new Date(ts);
-  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}`;
-}
-
-function ageGroup(age) {
-  const a = parseInt(age || 0);
-  if (a <= 2) return "0–2";
-  if (a <= 5) return "3–5";
-  if (a <= 12) return "6–12";
-  return "13+";
+function getWeek(d) {
+  const oneJan = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil((((d - oneJan) / 86400000) + oneJan.getDay() + 1) / 7);
 }
 
 // ---------------- Load All Data ----------------
 async function loadAllData() {
-  const [subsSnap, formsSnap, modulesSnap] = await Promise.all([
-    getDocs(query(collection(db, "submissions"), orderBy("submitted_at", "desc"))),
-    getDocs(collection(db, "forms")),
-    getDocs(collection(db, "modules"))
-  ]);
-
-  ALL_RECORDS = subsSnap.docs.map(d => d.data());
-  ALL_FORMS = formsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  ALL_MODULES = modulesSnap.docs.map(d => d.data());
+  const snap = await getDocs(query(collection(db, "submissions"), orderBy("submitted_at", "desc")));
+  ALL_RECORDS = snap.docs.map(d => d.data());
 }
 
-// ---------------- UI ----------------
-function renderOverview(container) {
-  const total = ALL_RECORDS.length;
-
-  const gender = { Male: 0, Female: 0 };
-  const byDept = groupBy(ALL_RECORDS, "department");
-  const byMonth = groupBy(ALL_RECORDS, r => monthKey(r.submitted_at));
-  const ages = {};
-
-  ALL_RECORDS.forEach(r => {
-    const g = r.gender_of_child || r.gender;
-    if (g === "Male") gender.Male++;
-    if (g === "Female") gender.Female++;
-
-    const ag = ageGroup(r.age_of_child || r.age);
-    ages[ag] = (ages[ag] || 0) + 1;
-  });
+// ---------------- Department Report UI ----------------
+function renderDepartmentReportForm(container) {
+  const depts = [...new Set(ALL_RECORDS.map(r => r.department).filter(Boolean))];
 
   container.innerHTML = `
-    <h2>📊 Executive Overview</h2>
+    <h2>📄 Department Summary Reports</h2>
 
-    <div class="stats-cards">
-      <div class="card"><h3>Total Records</h3><p>${total}</p></div>
-      <div class="card"><h3>Departments</h3><p>${Object.keys(byDept).length}</p></div>
-      <div class="card"><h3>Male</h3><p>${gender.Male}</p></div>
-      <div class="card"><h3>Female</h3><p>${gender.Female}</p></div>
+    <div class="report-form">
+      <label>Department</label>
+      <select id="repDept">
+        ${depts.map(d => `<option value="${d}">${d}</option>`).join("")}
+      </select>
+
+      <label>Period</label>
+      <select id="repPeriod">
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="annual">Annual</option>
+      </select>
+
+      <label>Select Date</label>
+      <input type="date" id="repDate"/>
+
+      <div class="report-actions">
+        <button class="btn" id="genReportBtn">Generate Report</button>
+        <button class="btn" id="pdfReportBtn" disabled>Download PDF</button>
+      </div>
     </div>
 
-    <canvas id="trendChart"></canvas>
-    <canvas id="deptChart"></canvas>
-    <canvas id="genderChart"></canvas>
-    <canvas id="ageChart"></canvas>
+    <pre id="reportPreview" class="report-preview"></pre>
   `;
 
-  renderLineChart("trendChart", Object.keys(byMonth), Object.values(byMonth).map(v => v.length), "Submissions Over Time");
-  renderBarChart("deptChart", Object.keys(byDept), Object.values(byDept).map(v => v.length), "By Department");
-  renderDoughnutChart("genderChart", ["Male", "Female"], [gender.Male, gender.Female], "Gender");
-  renderBarChart("ageChart", Object.keys(ages), Object.values(ages), "Age Groups");
+  document.getElementById("genReportBtn").onclick = generateDepartmentReport;
+  document.getElementById("pdfReportBtn").onclick = downloadReportPDF;
 }
 
-// ---------------- Department Performance ----------------
-function renderDepartments(container) {
-  const byDept = groupBy(ALL_RECORDS, "department");
+// ---------------- Generate Report ----------------
+function generateDepartmentReport() {
+  const dept = repDept.value;
+  const period = repPeriod.value;
+  const date = new Date(repDate.value);
 
-  container.innerHTML = `
-    <h2>🏥 Department Performance</h2>
-    <canvas id="deptPerfChart"></canvas>
-  `;
+  const filtered = ALL_RECORDS.filter(r => {
+    if (r.department !== dept) return false;
+    const d = r.submitted_at.toDate();
 
-  renderBarChart("deptPerfChart", Object.keys(byDept), Object.values(byDept).map(v => v.length), "Total Records");
-}
-
-// ---------------- Forms ----------------
-function renderForms(container) {
-  const byForm = groupBy(ALL_RECORDS, "form_id");
-
-  container.innerHTML = `
-    <h2>📝 Form Usage</h2>
-    <canvas id="formChart"></canvas>
-  `;
-
-  renderBarChart("formChart", Object.keys(byForm), Object.values(byForm).map(v => v.length), "Submissions Per Form");
-}
-
-// ---------------- Trends ----------------
-function renderTrends(container) {
-  const byMonth = groupBy(ALL_RECORDS, r => monthKey(r.submitted_at));
-
-  container.innerHTML = `
-    <h2>📈 Trends Over Time</h2>
-    <canvas id="trendLine"></canvas>
-  `;
-
-  renderLineChart("trendLine", Object.keys(byMonth), Object.values(byMonth).map(v => v.length), "Growth Trend");
-}
-
-// ---------------- Demographics ----------------
-function renderDemographics(container) {
-  const gender = { Male: 0, Female: 0 };
-
-  ALL_RECORDS.forEach(r => {
-    const g = r.gender_of_child || r.gender;
-    if (g === "Male") gender.Male++;
-    if (g === "Female") gender.Female++;
+    if (period === "daily") return d.toDateString() === date.toDateString();
+    if (period === "weekly") return getWeek(d) === getWeek(date);
+    if (period === "monthly") return d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear();
+    if (period === "annual") return d.getFullYear() === date.getFullYear();
   });
 
-  container.innerHTML = `
-    <h2>👥 Demographics</h2>
-    <canvas id="demoChart"></canvas>
-  `;
+  const byForm = groupBy(filtered, r => r.form_title || r.form_id || "Unknown Form");
+  const summary = {};
 
-  renderPieChart("demoChart", ["Male", "Female"], [gender.Male, gender.Female], "Gender Distribution");
+  Object.keys(byForm).forEach(form => {
+    summary[form] = {
+      totalSubmissions: byForm[form].length
+    };
+  });
+
+  CURRENT_REPORT = {
+    department: dept,
+    period,
+    totalSubmissions: filtered.length,
+    forms: summary
+  };
+
+  let output = `DEPARTMENT: ${dept}\nPERIOD: ${period.toUpperCase()}\nTOTAL SUBMISSIONS: ${filtered.length}\n\n`;
+
+  Object.keys(summary).forEach(f => {
+    output += `📝 ${f}\n   Total Submissions: ${summary[f].totalSubmissions}\n\n`;
+  });
+
+  reportPreview.textContent = output;
+  pdfReportBtn.disabled = false;
 }
 
-// ---------------- Public Entry ----------------
+// ---------------- PDF Export ----------------
+function downloadReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  let y = 10;
+  doc.text(`Department Report: ${CURRENT_REPORT.department}`, 10, y);
+  y += 10;
+
+  doc.text(`Period: ${CURRENT_REPORT.period}`, 10, y);
+  y += 10;
+
+  doc.text(`Total Submissions: ${CURRENT_REPORT.totalSubmissions}`, 10, y);
+  y += 10;
+
+  Object.keys(CURRENT_REPORT.forms).forEach(form => {
+    y += 10;
+    doc.text(`Form: ${form}`, 10, y);
+    y += 7;
+    doc.text(`Total Submissions: ${CURRENT_REPORT.forms[form].totalSubmissions}`, 14, y);
+  });
+
+  doc.save(`${CURRENT_REPORT.department}_report.pdf`);
+}
+
+// ---------------- Entry ----------------
 export async function loadReports(container) {
   container.innerHTML = "<p>Loading reports...</p>";
   await loadAllData();
 
   container.innerHTML = `
     <div class="records-actions">
-      <button id="r_overview" class="btn">Overview</button>
-      <button id="r_dept" class="btn">Departments</button>
-      <button id="r_forms" class="btn">Forms</button>
-      <button id="r_trends" class="btn">Trends</button>
-      <button id="r_demo" class="btn">Demographics</button>
+      <button id="r_reports" class="btn">📄 Dept Reports</button>
     </div>
-    <div id="reportsView"></div>
+    <div id="recordsView"></div>
   `;
 
-  const view = document.getElementById("reportsView");
+  const view = document.getElementById("recordsView");
+  document.getElementById("r_reports").onclick = () => renderDepartmentReportForm(view);
 
-  document.getElementById("r_overview").onclick = () => renderOverview(view);
-  document.getElementById("r_dept").onclick = () => renderDepartments(view);
-  document.getElementById("r_forms").onclick = () => renderForms(view);
-  document.getElementById("r_trends").onclick = () => renderTrends(view);
-  document.getElementById("r_demo").onclick = () => renderDemographics(view);
-
-  renderOverview(view);
+  renderDepartmentReportForm(view);
 }
