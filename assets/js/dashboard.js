@@ -65,7 +65,7 @@ function renderDirectButton(mod, container) {
     <span>${mod.name} Portal</span>
   `;
   btn.onclick = () => {
-    let target = mod.url || (mod.name === 'HR' ? 'https://hr.example.com' : 'https://finance.example.com');
+    let target = mod.url || (mod.name === 'HR' ? 'https://bethanykids.pahappahr.com/ServiceLogin' : 'https://finance.example.com');
     window.open(target, '_blank');
   };
   container.appendChild(btn);
@@ -187,7 +187,7 @@ async function loadModules() {
       const financeBtn = document.createElement("button");
       financeBtn.className = "w-full flex items-center space-x-3 p-3.5 rounded-xl bg-blue-600/10 hover:bg-blue-600 text-blue-600 hover:text-white transition-all text-sm font-bold mt-4 shadow-sm";
       financeBtn.innerHTML = `<i class="fas fa-coins text-sm"></i><span>Finance Portal</span>`;
-      financeBtn.onclick = () => window.open('https://finance.example.com', '_blank');
+      financeBtn.onclick = () => window.open('https://auth.aplos.com/oauth2/authorize?client_id=c07c4517-0063-4621-b0c2-68883a9780e3&response_type=code&redirect_uri=https://app.aplos.com/aws/api/v5/authservice/user_login&scope=offline_access', '_blank');
       nav.appendChild(financeBtn);
     }
 
