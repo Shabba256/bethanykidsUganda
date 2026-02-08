@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// 🔹 Firebase config
+// 🔹 Firebase config (UNCHANGED)
 const firebaseConfig = {
   apiKey: "AIzaSyCZ5L0dUrVt0MK5DDGuWZQlBOMitKYUuag",
   authDomain: "bethany-system.firebaseapp.com",
@@ -13,44 +13,52 @@ const firebaseConfig = {
   appId: "1:267285501238:web:b039650181d6c14b3acf97"
 };
 
-// 🔹 Initialize Firebase
+// 🔹 Initialize Firebase (UNCHANGED)
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 🔹 Login function
+// 🔹 UI elements (from new UI – safe if present)
+const loginBtn = document.getElementById("loginBtn");
+const errorDiv = document.getElementById("loginError");
+const errorMsg = document.getElementById("errorMsg");
+
+// 🔹 Unified login function (your original logic + new UI feedback)
 window.login = async function () {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const email = document.getElementById("email")?.value.trim();
+  const password = document.getElementById("password")?.value.trim();
 
   if (!email || !password) {
-    alert("Please enter both email and password.");
+    showError("Please enter both email and password.");
     return;
   }
 
+  setLoading(true);
+
   try {
-    // 1️⃣ Authenticate via Firebase Auth
+    // 1️⃣ Authenticate via Firebase Auth (UNCHANGED LOGIC)
     const cred = await signInWithEmailAndPassword(auth, email, password);
     const uid = cred.user.uid;
 
-    // 2️⃣ Load user document from Firestore
+    // 2️⃣ Load user document from Firestore (UNCHANGED LOGIC)
     const userRef = doc(db, "users", uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      alert("User profile not found. Contact admin.");
+      showError("User profile not found. Contact admin.");
+      setLoading(false);
       return;
     }
 
     const userData = userSnap.data();
 
     if (!userData.active) {
-      alert("Your account is deactivated. Contact admin.");
+      showError("Your account is deactivated. Contact admin.");
+      setLoading(false);
       return;
     }
 
-    // 3️⃣ Store minimal user info in localStorage for dashboard
-    //    (this is safe, we don't store password or sensitive info)
+    // 3️⃣ Store minimal user info in localStorage (UNCHANGED LOGIC)
     localStorage.setItem("user", JSON.stringify({
       uid: uid,
       full_name: userData.full_name,
@@ -59,11 +67,39 @@ window.login = async function () {
       role: userData.role
     }));
 
-    // 4️⃣ Redirect to dashboard
+    // 4️⃣ Redirect to dashboard (UNCHANGED LOGIC)
     window.location.href = "dashboard.html";
 
   } catch (err) {
     console.error("Login failed:", err);
-    alert("Login failed: " + err.message);
+    showError("Login failed: " + err.message);
+    setLoading(false);
   }
 };
+
+// 🔹 Optional button wiring (keeps both methods working)
+if (loginBtn) {
+  loginBtn.onclick = () => window.login();
+}
+
+// 🔹 UI helpers (from new UI – no logic changes)
+function showError(msg) {
+  if (errorDiv && errorMsg) {
+    errorDiv.classList.remove("hidden");
+    errorMsg.textContent = msg;
+  } else {
+    alert(msg); // fallback for old UI
+  }
+}
+
+function setLoading(isLoading) {
+  if (!loginBtn) return;
+
+  if (isLoading) {
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = `<i class="fas fa-circle-notch animate-spin"></i> <span>Verifying...</span>`;
+  } else {
+    loginBtn.disabled = false;
+    loginBtn.innerHTML = `<span>Secure Sign In</span> <i class="fas fa-chevron-right text-xs"></i>`;
+  }
+}

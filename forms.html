@@ -3,34 +3,51 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bethany Kids Uganda | Form</title>
-  <link rel="stylesheet" href="../assets/css/forms.css">
+  <title>Bethany Kids Uganda | Data Entry</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/forms.css">
 </head>
-<body>
+<body class="bg-slate-50 min-h-screen pb-20">
 
   <!-- NAVBAR / HEADER -->
-  <header class="form-header">
-    <button id="homeBtn">🏠 Home</button>
-    <button onclick="logout()" class="logout-btn">Logout</button>
-  </header>
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 px-6 py-4">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+      <button id="homeBtn" class="flex items-center space-x-2 text-slate-600 hover:text-blue-600 font-bold transition-all">
+        <i class="fas fa-arrow-left"></i>
+        <span>Dashboard</span>
+      </button>
+      <button onclick="logout()" class="flex items-center space-x-2 text-red-500 hover:text-red-600 font-bold transition-all">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+      </button>
+    </div>
+  </nav>
 
   <!-- FORM CONTENT -->
-  <main class="form-main">
-    <div class="form-card">
-      <img id="formImage" src="" alt="Form Header Image" class="form-header-img">
-      <h1 id="formTitle" class="form-title">Form Title</h1>
-      <p id="formDesc" class="form-desc">Form description goes here.</p>
-
-      <div id="formContainer">
-        <!-- Dynamic form will be rendered here by forms.js -->
+  <main class="max-w-4xl mx-auto mt-12 px-6">
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 animate-slide-up">
+      <div class="relative h-48 bg-slate-800">
+        <img id="formImage" src="" class="w-full h-full object-cover opacity-60" alt="Form Header Image">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent flex items-end p-10">
+          <div>
+            <h1 id="formTitle" class="text-3xl font-black text-white">Form Title</h1>
+            <p id="formDesc" class="text-slate-300 mt-2 text-sm max-w-lg">Form description goes here.</p>
+          </div>
+        </div>
       </div>
 
-      <div id="formMsg" class="form-msg"></div>
+      <div class="p-10">
+        <div id="formContainer" class="space-y-8">
+          <!-- Dynamic form injected here -->
+        </div>
+        
+        <div id="formMsg" class="mt-8 p-4 rounded-xl hidden text-center font-bold"></div>
+      </div>
     </div>
   </main>
 
   <!-- Scripts -->
-  <script type="module" src="../assets/js/forms.js"></script>
-
+  <script type="module" src="assets/js/forms.js"></script>
 </body>
 </html>

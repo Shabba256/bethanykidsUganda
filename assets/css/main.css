@@ -1,190 +1,46 @@
-/* GLOBAL STYLES */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f4f7ff;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-.layout {
-  display: flex;
-  min-height: 100vh;
+/* Optional custom scrollbar (won't affect layout) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
 }
 
-/* PROFILE */
-.profile {
-  text-align: center;
-  margin-bottom: 25px;
+/* Subtle animations (safe utility classes) */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.avatar {
-  width: 60px;
-  height: 60px;
-  margin: 0 auto 10px;
-  border-radius: 50%;
-  background: #ffffff55;
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
 }
 
-.profile-info strong {
-  display: block;
-  font-size: 14px;
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.profile-info small {
-  font-size: 12px;
-  opacity: 0.8;
+.animate-slide-up {
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* ORGANIZATION TITLE */
-.org-title {
-  margin-top: 0;
-  color: #0b4aa2;
-  font-size: 24px;
-  letter-spacing: 1px;
-}
-
-/* SIDEBAR */
-.sidebar {
-  width: 220px;
-  background: #0b4aa2;
-  color: white;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* NAVIGATION */
-.nav-section {
-  margin-bottom: 10px;
-}
-
-.nav-header {
-  padding: 12px;
-  cursor: pointer;
-  border-radius: 5px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: background 0.2s ease;
-}
-
-.nav-header.active {
-  background: #ffffff33;
-}
-
-.chevron {
-  transition: transform 0.3s ease;
-  font-size: 14px;
-}
-
-.nav-header.active .chevron {
-  transform: rotate(90deg);
-}
-
-/* SUBMENU */
-.submenu {
-  list-style: none;
-  padding-left: 15px;
-  margin: 0;
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-}
-
-.submenu.open {
-  max-height: 300px;
-}
-
-.submenu li {
-  padding: 8px 10px;
-  font-size: 14px;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.submenu li:hover {
-  background: #ffffff55;
-}
-
-/* NAV LIST */
-#nav {
-  flex: 1;
-}
-
-/* LOGOUT BUTTON */
-.logout {
-  background: white;
-  color: #0b4aa2;
-  border: none;
-  padding: 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 15px;
-}
-
-/* MAIN CONTENT */
-.content {
-  flex: 1;
-  padding: 30px;
-  background: #f9fbff;
-}
-
-/* LOGIN PAGE */
-.login-body {
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #e8f0ff, #f9fbff);
-  font-family: Arial, sans-serif;
-}
-
-.login-card {
-  background: white;
-  padding: 40px;
-  width: 360px;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  text-align: center;
-}
-
-.login-title {
-  margin: 0;
-  color: #0b4aa2;
-  font-size: 22px;
-  letter-spacing: 1px;
-}
-
-.login-subtitle {
-  font-size: 13px;
-  color: #555;
-  margin-bottom: 25px;
-}
-
-.login-card input {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 15px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 14px;
-}
-
-.login-card input:focus {
-  outline: none;
-  border-color: #0b4aa2;
-}
-
-.login-card button {
-  width: 100%;
-  padding: 12px;
-  background: #0b4aa2;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 15px;
-  cursor: pointer;
-}
-
-.login-card button:hover {
-  background: #093b80;
+/* Input focus styles (Tailwind-compatible) */
+input:focus, 
+select:focus, 
+textarea:focus {
+  border-color: #2563eb !important;
+  background-color: #fff !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
 }

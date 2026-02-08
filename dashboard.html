@@ -2,74 +2,104 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bethany Kids Uganda | Dashboard</title>
 
-  <!-- Main dashboard styles -->
+  <!-- UI / Styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Your existing styles (new-only compatible) -->
   <link rel="stylesheet" href="../assets/css/main.css">
-
-  <!-- Forms styles -->
-  <link rel="stylesheet" href="../assets/css/forms.css">
-
-  <link rel="stylesheet" href="../assets/css/reports.css">
-
-  <!-- Records styles -->
   <link rel="stylesheet" href="../assets/css/records.css">
+  <link rel="stylesheet" href="../assets/css/reports.css">
+  <link rel="stylesheet" href="../assets/css/forms.css">
 </head>
-<body>
+<body class="bg-slate-50 text-slate-900 overflow-hidden h-screen font-sans">
 
-<div class="layout">
+<div class="flex h-full">
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
-
-    <!-- PROFILE -->
-    <div class="profile">
-      <div class="avatar"></div>
-      <div class="profile-info">
-        <strong id="userName"></strong>
-        <small id="userDept"></small>
+  <aside class="w-72 bg-slate-900 text-slate-300 flex flex-col h-full shadow-2xl relative z-20 transition-all duration-300">
+    <!-- BRAND & PROFILE HEADER -->
+    <div class="p-6">
+      <div class="flex items-center space-x-3 text-white mb-8 px-2">
+        <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-lg shadow-lg">
+          <i class="fas fa-stethoscope"></i>
+        </div>
+        <span class="font-bold text-base tracking-tight uppercase">Bethany IMS</span>
       </div>
+
+      <!-- PROFILE INFO -->
+      <div class="bg-slate-800/40 p-4 rounded-2xl border border-slate-700/30 mb-6 transition-all hover:bg-slate-800/60">
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-lg border-2 border-slate-700" id="userAvatar">?</div>
+          <div class="overflow-hidden">
+            <p class="text-white font-bold text-sm truncate" id="userName"></p>
+            <p class="text-slate-400 text-[9px] uppercase tracking-widest font-black truncate" id="userDept"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-2 mb-2">
+        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Modules</p>
+      </div>
+
+      <!-- NAVIGATION (YOUR JS POPULATES THIS) -->
+      <nav class="space-y-1 overflow-y-auto custom-scrollbar pr-2 max-h-[calc(100vh-320px)]" id="nav"></nav>
     </div>
 
-    <!-- NAVIGATION -->
-    <ul id="nav"></ul>
-
     <!-- LOGOUT -->
-    <button onclick="logout()" class="logout">Logout</button>
+    <div class="mt-auto p-6 border-t border-slate-800/50 bg-slate-900/50">
+      <button id="logoutBtn" class="w-full flex items-center justify-center space-x-3 p-3.5 text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all font-bold text-sm group">
+        <i class="fas fa-sign-out-alt group-hover:-translate-x-1 transition-transform"></i>
+        <span>Logout Session</span>
+      </button>
+    </div>
   </aside>
 
   <!-- MAIN CONTENT -->
-  <main class="content">
-    <h1 class="org-title">BETHANY KIDS UGANDA</h1>
+  <main class="flex-1 overflow-y-auto relative z-10 p-8 lg:p-12 scroll-smooth">
+    <header class="flex justify-between items-center mb-10">
+      <div>
+        <h1 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Internal Management System</h1>
+        <h2 id="sectionTitle" class="text-3xl font-black text-slate-900">Welcome</h2>
+      </div>
+      <div id="adminLinkContainer"></div>
+    </header>
 
-    <h2 id="sectionTitle">Welcome</h2>
-    <div id="sectionContent">
-      Select a department option from the left.
+    <div id="sectionContent" class="max-w-7xl mx-auto">
+      <!-- Default content (JS will replace this) -->
+      <div class="bg-white rounded-3xl p-16 shadow-sm border border-slate-100 text-center flex flex-col items-center justify-center animate-fade-in">
+        <div class="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 text-4xl mb-6">
+          <i class="fas fa-hospital-user"></i>
+        </div>
+        <h3 class="text-2xl font-bold text-slate-800">Ready to begin?</h3>
+        <p class="text-slate-500 mt-4 max-w-sm leading-relaxed">
+          Select a department module from the sidebar to access forms, records, and reports.
+        </p>
+      </div>
     </div>
   </main>
 
 </div>
 
-<!-- Firebase compat scripts -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
+<!-- Libraries (UNCHANGED) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-<!-- Main dashboard JS -->
-<script type="module" src="../assets/js/dashboard.js"></script>
-
-<!-- Export libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
+<!-- Main dashboard JS (YOUR LOGIC) -->
+<script type="module" src="../assets/js/dashboard.js"></script>
+
 <script>
-  function logout() {
+  // Keep your existing logout logic
+  document.getElementById("logoutBtn")?.addEventListener("click", function () {
     localStorage.removeItem("user");
     window.location.href = "login.html";
-  }
+  });
 </script>
 
 </body>
