@@ -8,7 +8,6 @@ import {
 
 import {
   renderBarChart,
-  renderPieChart,
   renderLineChart,
   renderDoughnutChart
 } from "./chart.js";
@@ -33,13 +32,55 @@ function getWeek(d) {
   return Math.ceil((((d - oneJan) / 86400000) + oneJan.getDay() + 1) / 7);
 }
 
-// ---------------- Load All Data ----------------
+function filterByPeriod(records, dept, period, date) {
+  return records.filter(r => {
+    if (r.department !== dept) return false;
+    const d = r.submitted_at?.toDate ? r.submitted_at.toDate() : new Date(r.submitted_at);
+
+    if (period === "daily") return d.toDateString() === date.toDateString();
+    if (period === "weekly") return getWeek(d) === getWeek(date) && d.getFullYear() === date.getFullYear();
+    if (period === "monthly") return d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear();
+    if (period === "annual") return d.getFullYear() === date.getFullYear();
+  });
+}
+
+// ---------------- Load Data ----------------
 async function loadAllData() {
   const snap = await getDocs(query(collection(db, "submissions"), orderBy("submitted_at", "desc")));
   ALL_RECORDS = snap.docs.map(d => d.data());
 }
 
-// ---------------- Department Report UI ----------------
+// ---------------- Overview (ADDED ONLY) ----------------
+function renderOverview(container) {
+  const total = ALL_RECORDS.length;
+  const byDept = groupBy(ALL_RECORDS, "department");
+
+  container.innerHTML = `
+    <h2>📊 Executive Overview</h2>
+
+    <div class="stats-cards">
+      <div class="card">
+        <h3>Total Submissions</h3>
+        <p>${total}</p>
+      </div>
+      <div class="card">
+        <h3>Departments</h3>
+        <p>${Object.keys(byDept).length}</p>
+      </div>
+    </div>
+
+    <canvas id="overviewDeptChart"></canvas>
+  `;
+
+  renderBarChart(
+    "overviewDeptChart",
+    Object.keys(byDept),
+    Object.values(byDept).map(v => v.length),
+    "Submissions by Department"
+  );
+}
+
+// ---------------- Dept Report Form ----------------
 function renderDepartmentReportForm(container) {
   const depts = [...new Set(ALL_RECORDS.map(r => r.department).filter(Boolean))];
 
@@ -48,9 +89,7 @@ function renderDepartmentReportForm(container) {
 
     <div class="report-form">
       <label>Department</label>
-      <select id="repDept">
-        ${depts.map(d => `<option value="${d}">${d}</option>`).join("")}
-      </select>
+      <select id="repDept">${depts.map(d => `<option>${d}</option>`).join("")}</select>
 
       <label>Period</label>
       <select id="repPeriod">
@@ -60,7 +99,7 @@ function renderDepartmentReportForm(container) {
         <option value="annual">Annual</option>
       </select>
 
-      <label>Select Date</label>
+      <label>Date</label>
       <input type="date" id="repDate"/>
 
       <div class="report-actions">
@@ -72,91 +111,126 @@ function renderDepartmentReportForm(container) {
     <pre id="reportPreview" class="report-preview"></pre>
   `;
 
-  document.getElementById("genReportBtn").onclick = generateDepartmentReport;
-  document.getElementById("pdfReportBtn").onclick = downloadReportPDF;
+  genReportBtn.onclick = generateDepartmentReport;
+  pdfReportBtn.onclick = downloadReportPDF;
 }
 
-// ---------------- Generate Report ----------------
 function generateDepartmentReport() {
   const dept = repDept.value;
   const period = repPeriod.value;
   const date = new Date(repDate.value);
 
-  const filtered = ALL_RECORDS.filter(r => {
-    if (r.department !== dept) return false;
-    const d = r.submitted_at.toDate();
-
-    if (period === "daily") return d.toDateString() === date.toDateString();
-    if (period === "weekly") return getWeek(d) === getWeek(date);
-    if (period === "monthly") return d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear();
-    if (period === "annual") return d.getFullYear() === date.getFullYear();
-  });
-
+  const filtered = filterByPeriod(ALL_RECORDS, dept, period, date);
   const byForm = groupBy(filtered, r => r.form_title || r.form_id || "Unknown Form");
-  const summary = {};
 
-  Object.keys(byForm).forEach(form => {
-    summary[form] = {
-      totalSubmissions: byForm[form].length
-    };
+  CURRENT_REPORT = { dept, period, total: filtered.length, byForm };
+
+  let out = `DEPARTMENT: ${dept}\nPERIOD: ${period.toUpperCase()}\nTOTAL: ${filtered.length}\n\n`;
+
+  Object.keys(byForm).forEach(f => {
+    out += `📝 ${f}\n   Total Submissions: ${byForm[f].length}\n\n`;
   });
 
-  CURRENT_REPORT = {
-    department: dept,
-    period,
-    totalSubmissions: filtered.length,
-    forms: summary
-  };
-
-  let output = `DEPARTMENT: ${dept}\nPERIOD: ${period.toUpperCase()}\nTOTAL SUBMISSIONS: ${filtered.length}\n\n`;
-
-  Object.keys(summary).forEach(f => {
-    output += `📝 ${f}\n   Total Submissions: ${summary[f].totalSubmissions}\n\n`;
-  });
-
-  reportPreview.textContent = output;
+  reportPreview.textContent = out;
   pdfReportBtn.disabled = false;
 }
 
-// ---------------- PDF Export ----------------
+// ---------------- Charts ----------------
+function renderChartsSection(container) {
+  const depts = [...new Set(ALL_RECORDS.map(r => r.department).filter(Boolean))];
+
+  container.innerHTML = `
+    <h2>📊 Department Charts</h2>
+
+    <div class="report-form">
+      <label>Department</label>
+      <select id="chartDept">${depts.map(d => `<option>${d}</option>`).join("")}</select>
+
+      <label>Period</label>
+      <select id="chartPeriod">
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="annual">Annual</option>
+      </select>
+
+      <label>Date</label>
+      <input type="date" id="chartDate"/>
+
+      <button class="btn" id="genChartsBtn">Generate Charts</button>
+    </div>
+
+    <div class="charts-grid">
+      <canvas id="chartByForm"></canvas>
+      <canvas id="chartTrend"></canvas>
+      <canvas id="chartShare"></canvas>
+    </div>
+  `;
+
+  genChartsBtn.onclick = generateCharts;
+}
+
+function generateCharts() {
+  const dept = chartDept.value;
+  const period = chartPeriod.value;
+  const date = new Date(chartDate.value);
+
+  const filtered = filterByPeriod(ALL_RECORDS, dept, period, date);
+  const byForm = groupBy(filtered, r => r.form_title || r.form_id || "Unknown Form");
+
+  const labels = Object.keys(byForm);
+  const values = Object.values(byForm).map(v => v.length);
+
+  renderBarChart("chartByForm", labels, values, "Submissions by Form");
+  renderDoughnutChart("chartShare", labels, values, "Form Share");
+
+  const byDay = groupBy(filtered, r => {
+    const d = r.submitted_at.toDate();
+    return d.toISOString().split("T")[0];
+  });
+
+  renderLineChart("chartTrend", Object.keys(byDay), Object.values(byDay).map(v => v.length), "Trend");
+}
+
+// ---------------- PDF ----------------
 function downloadReportPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
   let y = 10;
-  doc.text(`Department Report: ${CURRENT_REPORT.department}`, 10, y);
+  doc.text(`Department: ${CURRENT_REPORT.dept}`, 10, y);
   y += 10;
-
   doc.text(`Period: ${CURRENT_REPORT.period}`, 10, y);
   y += 10;
+  doc.text(`Total Submissions: ${CURRENT_REPORT.total}`, 10, y);
 
-  doc.text(`Total Submissions: ${CURRENT_REPORT.totalSubmissions}`, 10, y);
-  y += 10;
-
-  Object.keys(CURRENT_REPORT.forms).forEach(form => {
+  Object.keys(CURRENT_REPORT.byForm).forEach(f => {
     y += 10;
-    doc.text(`Form: ${form}`, 10, y);
-    y += 7;
-    doc.text(`Total Submissions: ${CURRENT_REPORT.forms[form].totalSubmissions}`, 14, y);
+    doc.text(`${f}: ${CURRENT_REPORT.byForm[f].length}`, 10, y);
   });
 
-  doc.save(`${CURRENT_REPORT.department}_report.pdf`);
+  doc.save(`${CURRENT_REPORT.dept}_${CURRENT_REPORT.period}_report.pdf`);
 }
 
-// ---------------- Entry ----------------
+// ---------------- Public Entry ----------------
 export async function loadReports(container) {
   container.innerHTML = "<p>Loading reports...</p>";
   await loadAllData();
 
   container.innerHTML = `
     <div class="records-actions">
-      <button id="r_reports" class="btn">📄 Dept Reports</button>
+      <button id="r_overview" class="btn">📊 Overview</button>
+      <button id="r_forms" class="btn">📄 Dept Reports</button>
+      <button id="r_charts" class="btn">📈 Charts</button>
     </div>
     <div id="recordsView"></div>
   `;
 
   const view = document.getElementById("recordsView");
-  document.getElementById("r_reports").onclick = () => renderDepartmentReportForm(view);
 
-  renderDepartmentReportForm(view);
+  r_overview.onclick = () => renderOverview(view);
+  r_forms.onclick = () => renderDepartmentReportForm(view);
+  r_charts.onclick = () => renderChartsSection(view);
+
+  renderOverview(view);
 }
