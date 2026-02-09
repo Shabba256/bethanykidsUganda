@@ -4,50 +4,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bethany Kids Uganda | Data Entry</title>
+
+  <!-- Tailwind & FontAwesome -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Your CSS -->
+  <link rel="stylesheet" href="assets/css/main.css">
   <link rel="stylesheet" href="assets/css/forms.css">
 </head>
-<body class="bg-slate-50 min-h-screen pb-20">
+<body class="ims-background min-h-screen pb-20 relative">
 
   <!-- NAVBAR / HEADER -->
-  <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 px-6 py-4">
+  <nav class="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50 px-6 py-4">
     <div class="max-w-4xl mx-auto flex justify-between items-center">
-      <button id="homeBtn" class="flex items-center space-x-2 text-slate-600 hover:text-blue-600 font-bold transition-all">
-        <i class="fas fa-arrow-left"></i>
+      <button id="homeBtn" class="flex items-center space-x-2 text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest transition-all">
+        <i class="fas fa-arrow-left text-[10px]"></i>
         <span>Dashboard</span>
       </button>
-      <button onclick="logout()" class="flex items-center space-x-2 text-red-500 hover:text-red-600 font-bold transition-all">
-        <i class="fas fa-sign-out-alt"></i>
-        <span>Logout</span>
-      </button>
+      <div class="flex items-center space-x-3">
+        <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Clinical Data Entry</span>
+        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
+          <i class="fas fa-file-medical text-xs"></i>
+        </div>
+      </div>
     </div>
   </nav>
 
   <!-- FORM CONTENT -->
-  <main class="max-w-4xl mx-auto mt-12 px-6">
-    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 animate-slide-up">
-      <div class="relative h-48 bg-slate-800">
-        <img id="formImage" src="" class="w-full h-full object-cover opacity-60" alt="Form Header Image">
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent flex items-end p-10">
+  <main class="max-w-4xl mx-auto mt-12 px-6 relative z-10">
+    <div class="bg-white rounded-[40px] shadow-2xl overflow-hidden border border-white animate-slide-up">
+      <!-- Header Image -->
+      <div class="relative h-64 bg-slate-800">
+        <img id="formImage" src="" class="w-full h-full object-cover opacity-80" alt="Form Header Image">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent flex items-end p-12">
           <div>
-            <h1 id="formTitle" class="text-3xl font-black text-white">Form Title</h1>
-            <p id="formDesc" class="text-slate-300 mt-2 text-sm max-w-lg">Form description goes here.</p>
+            <h1 id="formTitle" class="text-3xl font-black text-white tracking-tight">Form Title</h1>
+            <p id="formDesc" class="text-slate-300 mt-2 text-sm max-w-lg font-medium leading-relaxed">Description goes here.</p>
           </div>
         </div>
       </div>
 
-      <div class="p-10">
-        <div id="formContainer" class="space-y-8">
-          <!-- Dynamic form injected here -->
+      <!-- Dynamic Form Container -->
+      <div class="p-12">
+        <div id="formContainer" class="space-y-10">
+          <!-- Dynamic form injected here via forms.js -->
         </div>
-        
-        <div id="formMsg" class="mt-8 p-4 rounded-xl hidden text-center font-bold"></div>
+
+        <div id="formMsg" class="mt-8 p-6 rounded-3xl hidden text-center font-black uppercase tracking-widest text-[11px]"></div>
       </div>
     </div>
   </main>
 
-  <!-- Scripts -->
+  <!-- Form JS -->
   <script type="module" src="assets/js/forms.js"></script>
 </body>
 </html>
